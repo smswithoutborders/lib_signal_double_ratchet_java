@@ -4,8 +4,13 @@ plugins {
 }
 
 def versionsPropertiesFile = rootProject.file("version.properties")
+def releasePropertiesFile= rootProject.file("release.properties")
+
 def versionProperties = new Properties()
 versionProperties.load(new FileInputStream(versionsPropertiesFile))
+
+def releaseProperties = new Properties()
+releaseProperties.load(new FileInputStream(releasePropertiesFile))
 
 android {
     namespace 'com.afkanerd.smswithoutborders.libsignal_doubleratchet'
@@ -62,8 +67,12 @@ publishing {
     }
     repositories {
         maven {
-            name = 'smswithoutborders-libsignal-maven-repo'
-            url = layout.buildDirectory.dir("repo")
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/smswithoutborders/lib_signal_double_ratchet_java")
+            credentials {
+                username = releaseProperties['github_username']
+                password = releaseProperties['github_token']
+            }
         }
     }
 }
