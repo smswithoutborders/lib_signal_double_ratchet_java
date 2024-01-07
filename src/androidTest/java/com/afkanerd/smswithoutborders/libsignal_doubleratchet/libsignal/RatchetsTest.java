@@ -72,12 +72,11 @@ public class RatchetsTest {
 
         final byte[] plainText = CryptoHelpers.generateRandomBytes(130);
         final byte[] AD = CryptoHelpers.generateRandomBytes(16);
+
         Ratchets.EncryptPayload encryptPayloadAlice =
                 ratchetAlice.ratchetEncrypt(stateAlice, plainText, AD);
-
         expectedStateAlice.Ns = 1;
         assertEquals(expectedStateAlice, stateAlice);
-
         Headers expectedHeadersAlice = new Headers(stateAlice.DHs, 0, 0);
         assertEquals(expectedHeadersAlice, encryptPayloadAlice.header);
 
@@ -88,11 +87,25 @@ public class RatchetsTest {
         expectedStateBob.Ns = 0;
         expectedStateBob.Nr = 1;
         expectedStateBob.DHr = stateAlice.DHs.getPublic();
-        assertArrayEquals(expectedStateBob.DHr.getEncoded(),
-                stateBob.DHr.getEncoded());
+        assertArrayEquals(expectedStateBob.DHr.getEncoded(), stateBob.DHr.getEncoded());
+        assertEquals(expectedStateBob, stateBob);
+        assertArrayEquals(plainText, decryptedPlainText);
+
+        Ratchets.EncryptPayload encryptPayloadBob =
+                ratchetBob.ratchetEncrypt(stateBob, plainText, AD);
+        expectedStateBob.Ns = 1;
         assertEquals(expectedStateBob, stateBob);
 
-        assertArrayEquals(plainText, decryptedPlainText);
+        byte[] decryptedPlainText1 = ratchetAlice.ratchetDecrypt(keystoreAliasAlice, stateAlice,
+                encryptPayloadBob.header, encryptPayloadBob.cipherText,
+                Protocols.CONCAT(AD, encryptPayloadBob.header));
+        expectedStateAlice.PN = 1;
+        expectedStateAlice.Ns = 0;
+        expectedStateAlice.Nr = 1;
+        expectedStateAlice.DHr = stateBob.DHs.getPublic();
+        assertArrayEquals(expectedStateAlice.DHr.getEncoded(), stateAlice.DHr.getEncoded());
+        assertEquals(expectedStateAlice, stateAlice);
+        assertArrayEquals(plainText, decryptedPlainText1);
     }
 }
 
