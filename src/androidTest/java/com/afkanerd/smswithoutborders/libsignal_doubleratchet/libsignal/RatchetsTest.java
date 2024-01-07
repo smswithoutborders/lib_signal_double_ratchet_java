@@ -12,22 +12,33 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoHelpers;
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.KeystoreHelpers;
+import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityAES;
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityECDH;
+import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityRSA;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PublicKey;
-import java.util.Base64;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 @RunWith(AndroidJUnit4.class)
 public class RatchetsTest {
 
     Context context;
     PublicKey dhPublicKeyBob;
+    PublicKey bobDefaultPublicKeyEC;
+    PublicKey bobDefaultPublicKeyRSA;
     KeyPair bobKeyPair;
 
     byte[] SK;
@@ -38,11 +49,27 @@ public class RatchetsTest {
         // starting constants
         KeystoreHelpers.removeAllFromKeystore(context);
 
-        SK = "115e74367d62f97538324202c0a3a4a2a77f6f79b597873875012a95152020f3".getBytes();
+//        SK = "115e74367d62f97538324202c0a3a4a2a77f6f79b597873875012a95152020f3".getBytes();
+        SK = SecurityAES.generateSecretKey(32).getEncoded();
 
         String keystoreAliasBob = "bobsKeystoreAlias";
+        String keystoreAliasBobEC = "bobsKeystoreAliasEC";
         bobKeyPair = SecurityECDH.generateKeyPair(keystoreAliasBob).first;
         dhPublicKeyBob = bobKeyPair.getPublic();
+
+        bobDefaultPublicKeyEC = SecurityECDH.generateECKeyPair(keystoreAliasBobEC, 256);
+        bobDefaultPublicKeyRSA = SecurityRSA.generateKeyPair(keystoreAliasBobEC, 512);
+    }
+
+    @Test
+    public void encryptionTransmissionParamsChecks() throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, NoSuchProviderException {
+        byte[] encryptedSkEC = SecurityECDH.encryptWithECPublicKey(SK, bobDefaultPublicKeyEC);
+        int len = encryptedSkEC.length + dhPublicKeyBob.getEncoded().length;
+        Log.d(getClass().getName(), "Len EC: " + encryptedSkEC.length + ":" + len);
+
+        byte[] encryptedSkRSA = SecurityRSA.encrypt(bobDefaultPublicKeyRSA, SK);
+        int lenRSA = encryptedSkRSA.length + dhPublicKeyBob.getEncoded().length;
+        Log.d(getClass().getName(), "Len RSA: " + encryptedSkRSA.length + ":" + lenRSA);
     }
 
     @Test

@@ -8,7 +8,11 @@ import android.util.Pair;
 
 
 import org.spongycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
+import org.spongycastle.jce.ECNamedCurveTable;
 import org.spongycastle.jce.provider.BouncyCastleProvider;
+import org.spongycastle.jce.spec.ECNamedCurveParameterSpec;
+import org.spongycastle.jce.spec.ECPublicKeySpec;
+import org.spongycastle.math.ec.ECPoint;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -35,6 +39,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
 import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyAgreement;
 import javax.crypto.NoSuchPaddingException;
@@ -78,9 +83,29 @@ public class SecurityECDH {
         return keyAgreement.generateSecret();
     }
 
+    /**
+     * Generate and returns an EC Encryption/Decryption KeyPair.
+     *
+     * @param keystoreAlias
+     * @return
+     * @throws InvalidAlgorithmParameterException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     */
+    public static PublicKey generateECKeyPair(String keystoreAlias, int keySize) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(
+                KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore");
+        kpg.initialize(new KeyGenParameterSpec.Builder(
+                keystoreAlias,
+                KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                        .setKeySize(keySize)
+                .build());
+
+        return kpg.generateKeyPair().getPublic();
+    }
 
     /**
-     * Generates and returns an EC KeyPair.
+     * Generates and returns an EC Agreement KeyPair.
      * <p> If on Android SDK >=34 the KeyPair is stored in the Keystore.</p>
      *
      * <p> If on Android SDK <34 the KeyPair is returned.</p>
@@ -120,6 +145,16 @@ public class SecurityECDH {
             keyPairPair = new Pair<>(keyPair, encryptedPrivateKey);
         }
         return keyPairPair;
+    }
+
+    // Function to encrypt data with an EC public key
+    public static byte[] encryptWithECPublicKey(byte[] data, PublicKey publicKey) throws NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        // Initialize the cipher with the EC public key for encryption
+        Cipher cipher = Cipher.getInstance("ECIES", "SC");
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+
+        // Encrypt the data
+        return cipher.doFinal(data);
     }
 
 //    /**

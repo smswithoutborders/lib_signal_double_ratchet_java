@@ -1,12 +1,16 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet;
 
+import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.ECGenParameterSpec;
 import java.security.spec.MGF1ParameterSpec;
 
 import javax.crypto.BadPaddingException;
@@ -27,6 +31,18 @@ public class SecurityRSA {
     public static OAEPParameterSpec decryptionDigestParam =
             new OAEPParameterSpec("SHA-256", "MGF1", defaultDecryptionDigest,
                     PSource.PSpecified.DEFAULT);
+
+    public static PublicKey generateKeyPair(String keystoreAlias, int keySize) throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(
+                KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore");
+        kpg.initialize(new KeyGenParameterSpec.Builder(
+                keystoreAlias,
+                KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                .setKeySize(keySize)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_OAEP)
+                .build());
+        return kpg.generateKeyPair().getPublic();
+    }
 
     public static byte[] decrypt(PrivateKey privateKey, byte[] data)
             throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException,
