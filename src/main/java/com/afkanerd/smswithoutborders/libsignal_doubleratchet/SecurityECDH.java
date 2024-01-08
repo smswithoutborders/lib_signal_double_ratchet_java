@@ -147,7 +147,19 @@ public class SecurityECDH {
         return keyPairPair;
     }
 
-    // Function to encrypt data with an EC public key
+    /**
+     *
+     * <a href="https://stackoverflow.com/a/57634295"></a>
+     * @param data
+     * @param publicKey
+     * @return
+     * @throws NoSuchPaddingException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     * @throws InvalidKeyException
+     * @throws IllegalBlockSizeException
+     * @throws BadPaddingException
+     */
     public static byte[] encryptWithECPublicKey(byte[] data, PublicKey publicKey) throws NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         // Initialize the cipher with the EC public key for encryption
         Cipher cipher = Cipher.getInstance("ECIES", "SC");
