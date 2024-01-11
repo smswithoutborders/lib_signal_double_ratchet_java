@@ -50,7 +50,7 @@ public class RatchetsTest {
         KeystoreHelpers.removeAllFromKeystore(context);
 
 //        SK = "115e74367d62f97538324202c0a3a4a2a77f6f79b597873875012a95152020f3".getBytes();
-        SK = SecurityAES.generateSecretKey(32).getEncoded();
+        SK = SecurityAES.generateSecretKey(256).getEncoded();
 
         String keystoreAliasBob = "bobsKeystoreAlias";
         String keystoreAliasBobEC = "bobsKeystoreAliasEC";
@@ -106,6 +106,14 @@ public class RatchetsTest {
         assertEquals(expectedStateAlice, stateAlice);
         Headers expectedHeadersAlice = new Headers(stateAlice.DHs, 0, 0);
         assertEquals(expectedHeadersAlice, encryptPayloadAlice.header);
+
+        // TODO: Size of the Header (H) (documentation required)
+        Log.d(getClass().getName(), "H.size: " +
+                encryptPayloadAlice.header.getSerialized().length);
+        // TODO: Size of the Encrypted Header (EH) (documentation required)
+
+        // TODO: Size of the Encrypted Message (EM) (documentation required)
+        Log.d(getClass().getName(), "EM.size: " + encryptPayloadAlice.cipherText.length);
 
         byte[] decryptedPlainText = ratchetBob.ratchetDecrypt(keystoreAliasBob, stateBob,
                 encryptPayloadAlice.header, encryptPayloadAlice.cipherText,
