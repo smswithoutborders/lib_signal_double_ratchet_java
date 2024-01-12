@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 
 import android.content.Context;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -24,9 +25,11 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PublicKey;
+import java.security.cert.CertificateException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -38,10 +41,9 @@ public class RatchetsTest {
     Context context;
     PublicKey dhPublicKeyBob;
     PublicKey bobDefaultPublicKeyEC;
-    PublicKey bobDefaultPublicKeyRSA;
     KeyPair bobKeyPair;
 
-    byte[] SK;
+    String keystoreAliasAlice = "bobsKeystoreAlias";
 
     public RatchetsTest() throws GeneralSecurityException, IOException, InterruptedException {
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -49,31 +51,35 @@ public class RatchetsTest {
         // starting constants
         KeystoreHelpers.removeAllFromKeystore(context);
 
-//        SK = "115e74367d62f97538324202c0a3a4a2a77f6f79b597873875012a95152020f3".getBytes();
-        SK = SecurityAES.generateSecretKey(256).getEncoded();
-
-        String keystoreAliasBob = "bobsKeystoreAlias";
-        String keystoreAliasBobEC = "bobsKeystoreAliasEC";
-        bobKeyPair = SecurityECDH.generateKeyPair(keystoreAliasBob).first;
-        dhPublicKeyBob = bobKeyPair.getPublic();
-
-        bobDefaultPublicKeyEC = SecurityECDH.generateECKeyPair(keystoreAliasBobEC, 256);
-        bobDefaultPublicKeyRSA = SecurityRSA.generateKeyPair(keystoreAliasBobEC, 512);
+//        String keystoreAliasBobEC = "bobsKeystoreAliasEC";
+//        bobDefaultPublicKeyEC = SecurityECDH.generateECKeyPair(keystoreAliasBobEC, 256);
     }
 
-    @Test
-    public void encryptionTransmissionParamsChecks() throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, NoSuchProviderException {
-        byte[] encryptedSkEC = SecurityECDH.encryptWithECPublicKey(SK, bobDefaultPublicKeyEC);
-        int len = encryptedSkEC.length + dhPublicKeyBob.getEncoded().length;
-        Log.d(getClass().getName(), "Len EC: " + encryptedSkEC.length + ":" + len);
-
-        byte[] encryptedSkRSA = SecurityRSA.encrypt(bobDefaultPublicKeyRSA, SK);
-        int lenRSA = encryptedSkRSA.length + dhPublicKeyBob.getEncoded().length;
-        Log.d(getClass().getName(), "Len RSA: " + encryptedSkRSA.length + ":" + lenRSA);
-    }
+//    @Test
+//    public void encryptionTransmissionParamsChecks() throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, NoSuchProviderException, CertificateException, KeyStoreException, IOException {
+////        byte[] SK = SecurityAES.generateSecretKey(256).getEncoded();
+////        byte[] encryptedSkEC = SecurityECDH.encryptWithECPublicKey(SK, bobDefaultPublicKeyEC);
+////        int len = encryptedSkEC.length + dhPublicKeyBob.getEncoded().length;
+////        Log.d(getClass().getName(), "Len EC: " + encryptedSkEC.length + ":" + len);
+//
+//        byte[] SK = CryptoHelpers.generateRandomBytes(32);
+//        String keystoreAliasBob = "encryptionTransmissionParamsChecks";
+//        // pub key len = 94
+//        PublicKey bobDefaultPublicKeyRSA = SecurityRSA.generateKeyPair(keystoreAliasBob, 512);
+//        byte[] encryptedSkRSA = SecurityRSA.encrypt(bobDefaultPublicKeyRSA, SK);
+//        int lenRSA = encryptedSkRSA.length + bobDefaultPublicKeyRSA.getEncoded().length;
+//        Log.d(getClass().getName(), "Len RSA: " + encryptedSkRSA.length + ":" + lenRSA);
+//        KeystoreHelpers.removeAllFromKeystore(context);
+//    }
 
     @Test
     public void completeRatchetTest() throws Throwable {
+        byte[] SK = CryptoHelpers.generateRandomBytes(32);
+
+        String keystoreAlias = "bobsKeystoreAlias";
+        bobKeyPair = SecurityECDH.generateKeyPair(keystoreAlias).first;
+        dhPublicKeyBob = bobKeyPair.getPublic();
+
         Ratchets ratchetAlice = new Ratchets(), ratchetBob = new Ratchets();
         States stateAlice = new States(), stateBob = new States();
 
@@ -87,7 +93,8 @@ public class RatchetsTest {
         States expectedStateAlice = new States(), expectedStateBob = new States();
 
         // alice params
-        expectedStateAlice.DHs = SecurityECDH.generateKeyPair(keystoreAliasAlice).first;
+        String keystoreAliasAliceExpected = "bob_session_0_expected";
+        expectedStateAlice.DHs = SecurityECDH.generateKeyPair(keystoreAliasAliceExpected).first;
         expectedStateAlice.DHr = dhPublicKeyBob;
 
         // bob params

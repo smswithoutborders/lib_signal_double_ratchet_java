@@ -1,11 +1,15 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal;
 
+import android.util.Pair;
+
 import androidx.annotation.Nullable;
 
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -23,7 +27,7 @@ public class States {
 
     public int PN = 0;
 
-    Map<String, String> MKSKIPPED = new HashMap<>();
+    Map<Pair<PublicKey, Integer>, byte[]> MKSKIPPED = new HashMap<>();
 
     @Override
     public boolean equals(@Nullable Object obj) {

@@ -5,6 +5,7 @@ import static com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoHelpe
 import static com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoHelpers.verifyCipherText;
 
 import android.content.Context;
+import android.util.Pair;
 
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoHelpers;
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityAES;
@@ -46,16 +47,17 @@ public class Protocols {
         return SecurityECDH.generateSecretKey(dhPair, publicKey);
     }
 
-    public static byte[][] KDF_RK(byte[] rk, byte[] dhOut) throws GeneralSecurityException {
+    public static Pair<byte[], byte[]> KDF_RK(byte[] rk, byte[] dhOut) throws GeneralSecurityException {
         byte[] info = "KDF_RK".getBytes();
-        return CryptoHelpers.HKDF(ALGO, dhOut, rk, info, HKDF_LEN, HKDF_NUM_KEYS);
+        byte[][] hkdfOutput = CryptoHelpers.HKDF(ALGO, dhOut, rk, info, HKDF_LEN, HKDF_NUM_KEYS);
+        return new Pair<>(hkdfOutput[0], hkdfOutput[1]);
     }
 
-    public static byte[][] KDF_CK(byte[] ck) throws GeneralSecurityException {
+    public static Pair<byte[], byte[]> KDF_CK(byte[] ck) throws GeneralSecurityException {
         Mac mac = CryptoHelpers.HMAC(ck);
         ck = mac.doFinal(new byte[]{0x01});
         byte[] mk = mac.doFinal(new byte[]{0x02});
-        return new byte[][]{ck, mk};
+        return new Pair<>(ck, mk);
     }
 
     public static byte[] ENCRYPT(byte[] mk, byte[] plainText, byte[] associated_data) throws Throwable {
