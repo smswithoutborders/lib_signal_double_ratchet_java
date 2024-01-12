@@ -10,7 +10,7 @@ import java.security.PublicKey;
 import java.util.Arrays;
 
 public class Ratchets {
-    private static int MAX_SKIP = 20;
+    public final int MAX_SKIP = 20;
     public void ratchetInitAlice(String keystoreAlias, States state, byte[] SK,
                                  PublicKey dhPublicKeyBob) throws GeneralSecurityException, IOException, InterruptedException {
         state.DHs = Protocols.GENERATE_DH(keystoreAlias);
