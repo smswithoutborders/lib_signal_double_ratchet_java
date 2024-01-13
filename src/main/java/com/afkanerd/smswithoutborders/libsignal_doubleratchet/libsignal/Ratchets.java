@@ -1,6 +1,8 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal;
 
-import android.content.Context;
+import android.os.Build;
+import android.util.Base64;
+import android.util.Log;
 import android.util.Pair;
 
 import java.io.IOException;
@@ -25,7 +27,7 @@ public class Ratchets {
         state.RK = SK;
     }
 
-    public EncryptPayload ratchetEncrypt(States state, byte[] plainText, byte[] AD) throws Throwable {
+    public Pair<Headers, byte[]> ratchetEncrypt(States state, byte[] plainText, byte[] AD) throws Throwable {
         Pair<byte[], byte[]> kdfCkOutput = Protocols.KDF_CK(state.CKs);
         state.CKs = kdfCkOutput.first;
         byte[] mk = kdfCkOutput.second;
@@ -33,12 +35,12 @@ public class Ratchets {
         state.Ns += 1;
 
         byte[] cipherText = Protocols.ENCRYPT(mk, plainText, Protocols.CONCAT(AD, header));
-        return new EncryptPayload(header, cipherText);
+        return new Pair<>(header, cipherText);
     }
 
     public byte[] ratchetDecrypt(String keystoreAlias, States state, Headers header,
                                  byte[] cipherText, byte[] AD) throws Throwable {
-        byte[] plainText = trySkipMessageKeys(state, header, cipherText, AD);
+        byte[] plainText = trySkippedMessageKeys(state, header, cipherText, AD);
         if(plainText != null)
             return plainText;
 
@@ -47,11 +49,12 @@ public class Ratchets {
             skipMessageKeys(state, header.PN);
             DHRatchet(keystoreAlias, state, header);
         }
+        skipMessageKeys(state, header.N);
         Pair<byte[], byte[]> kdfCkOutput = Protocols.KDF_CK(state.CKr);
         state.CKr = kdfCkOutput.first;
         byte[] mk = kdfCkOutput.second;
         state.Nr += 1;
-        return Protocols.DECRYPT(mk, cipherText, AD);
+        return Protocols.DECRYPT(mk, cipherText, Protocols.CONCAT(AD, header));
     }
 
     private void DHRatchet(String keystoreAlias,
@@ -72,7 +75,7 @@ public class Ratchets {
         state.CKs = kdfRkOutput.second;
     }
 
-    private byte[] trySkipMessageKeys(States state, Headers header, byte[] cipherText, byte[] AD) throws Throwable {
+    private byte[] trySkippedMessageKeys(States state, Headers header, byte[] cipherText, byte[] AD) throws Throwable {
         Pair<PublicKey, Integer> mkSkippedKeys = new Pair<>(header.dh, header.N);
         if(state.MKSKIPPED.containsKey(mkSkippedKeys)){
             byte[] mk = state.MKSKIPPED.get(mkSkippedKeys);
@@ -90,19 +93,11 @@ public class Ratchets {
         if(state.CKr != null) {
             while(state.Nr < until) {
                 Pair<byte[], byte[]> kdfCkOutput = Protocols.KDF_CK(state.CKr);
-                state.MKSKIPPED.put(new Pair<>(state.DHr, state.Nr), kdfCkOutput.second);
+                state.CKr = kdfCkOutput.first;
+                byte[] mk = kdfCkOutput.second;
+                state.MKSKIPPED.put(new Pair<>(state.DHr, state.Nr), mk);
                 state.Nr +=1;
             }
-        }
-    }
-
-    public static class EncryptPayload {
-        public Headers header;
-        public byte[] cipherText;
-
-        public EncryptPayload(Headers header, byte[] cipherText) {
-            this.header = header;
-            this.cipherText = cipherText;
         }
     }
 

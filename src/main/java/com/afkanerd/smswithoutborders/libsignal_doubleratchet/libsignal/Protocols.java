@@ -5,6 +5,8 @@ import static com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoHelpe
 import static com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoHelpers.verifyCipherText;
 
 import android.content.Context;
+import android.util.Base64;
+import android.util.Log;
 import android.util.Pair;
 
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoHelpers;
@@ -72,7 +74,6 @@ public class Protocols {
 
         byte[] cipherText = SecurityAES.encryptAES256CBC(plainText, key, iv);
         byte[] mac = buildVerificationHash(authenticationKey, associated_data, cipherText).doFinal();
-
         return Bytes.concat(cipherText, mac) ;
     }
 

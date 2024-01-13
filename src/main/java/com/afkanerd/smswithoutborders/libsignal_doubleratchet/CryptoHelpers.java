@@ -1,6 +1,7 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet;
 
 import android.util.Base64;
+import android.util.Log;
 
 import com.google.common.primitives.Bytes;
 import com.google.crypto.tink.subtle.Hkdf;
@@ -63,7 +64,6 @@ public class CryptoHelpers {
         byte[] reconstructedMac =
                 buildVerificationHash(authenticationKey, AD, extractedCipherText)
                         .doFinal();
-
         if(Arrays.equals(macValue, reconstructedMac)) {
             return extractedCipherText;
         }

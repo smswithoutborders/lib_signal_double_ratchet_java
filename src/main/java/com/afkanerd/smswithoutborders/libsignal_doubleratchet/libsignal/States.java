@@ -4,6 +4,8 @@ import android.util.Pair;
 
 import androidx.annotation.Nullable;
 
+import com.google.crypto.tink.subtle.Base64;
+
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -43,5 +45,16 @@ public class States {
                     state.PN == this.PN;
         }
         return false;
+    }
+
+    public String log(String name) {
+        return name + " - DHs: " + Base64.encodeToString(DHs.getPublic().getEncoded(), Base64.DEFAULT) + "\n" +
+                name + " - DHr: " + Base64.encodeToString(DHr.getEncoded(), Base64.DEFAULT) + "\n" +
+                name + " - RK: " + Base64.encodeToString(RK, Base64.DEFAULT) + "\n" +
+                name + " - CKs: " + Base64.encodeToString(CKs, Base64.DEFAULT) + "\n" +
+                name + " - CKr: " + Base64.encodeToString(CKr, Base64.DEFAULT) + "\n" +
+                name + " - Ns: " + Ns + "\n" +
+                name + " - Nr: " + Nr + "\n" +
+                name + " - PN: " + PN;
     }
 }

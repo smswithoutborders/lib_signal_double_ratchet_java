@@ -83,9 +83,11 @@ public class RatchetsTest {
         Ratchets ratchetAlice = new Ratchets(), ratchetBob = new Ratchets();
         States stateAlice = new States(), stateBob = new States();
 
+        // TODO: store this
         String keystoreAliasAlice = "bob_session_0";
         ratchetAlice.ratchetInitAlice(keystoreAliasAlice, stateAlice, SK, dhPublicKeyBob);
 
+        // TODO: store this
         String keystoreAliasBob = "alice_session_0";
         ratchetBob.ratchetInitBob(stateBob, SK, bobKeyPair);
 
@@ -107,24 +109,26 @@ public class RatchetsTest {
         final byte[] plainText = CryptoHelpers.generateRandomBytes(130);
         final byte[] AD = CryptoHelpers.generateRandomBytes(16);
 
-        Ratchets.EncryptPayload encryptPayloadAlice =
+        // TODO: update this
+        Pair<Headers, byte[]> encryptPayloadAlice =
                 ratchetAlice.ratchetEncrypt(stateAlice, plainText, AD);
         expectedStateAlice.Ns = 1;
         assertEquals(expectedStateAlice, stateAlice);
         Headers expectedHeadersAlice = new Headers(stateAlice.DHs, 0, 0);
-        assertEquals(expectedHeadersAlice, encryptPayloadAlice.header);
+        assertEquals(expectedHeadersAlice, encryptPayloadAlice.first);
 
         // TODO: Size of the Header (H) (documentation required)
         Log.d(getClass().getName(), "H.size: " +
-                encryptPayloadAlice.header.getSerialized().length);
+                encryptPayloadAlice.first.getSerialized().length);
         // TODO: Size of the Encrypted Header (EH) (documentation required)
 
         // TODO: Size of the Encrypted Message (EM) (documentation required)
-        Log.d(getClass().getName(), "EM.size: " + encryptPayloadAlice.cipherText.length);
+        Log.d(getClass().getName(), "EM.size: " + encryptPayloadAlice.second.length);
 
+        // TODO: update this
+        Log.d(getClass().getName(), "Decrypting 1");
         byte[] decryptedPlainText = ratchetBob.ratchetDecrypt(keystoreAliasBob, stateBob,
-                encryptPayloadAlice.header, encryptPayloadAlice.cipherText,
-                Protocols.CONCAT(AD, encryptPayloadAlice.header));
+                encryptPayloadAlice.first, encryptPayloadAlice.second, AD);
         expectedStateBob.PN = 0;
         expectedStateBob.Ns = 0;
         expectedStateBob.Nr = 1;
@@ -133,14 +137,17 @@ public class RatchetsTest {
         assertEquals(expectedStateBob, stateBob);
         assertArrayEquals(plainText, decryptedPlainText);
 
-        Ratchets.EncryptPayload encryptPayloadBob =
+        // TODO: update this
+        Pair<Headers, byte[]> encryptPayloadBob =
                 ratchetBob.ratchetEncrypt(stateBob, plainText, AD);
         expectedStateBob.Ns = 1;
+        expectedStateBob.Nr = 1;
         assertEquals(expectedStateBob, stateBob);
 
+        // TODO: update this
+        Log.d(getClass().getName(), "Decrypting 2");
         byte[] decryptedPlainText1 = ratchetAlice.ratchetDecrypt(keystoreAliasAlice, stateAlice,
-                encryptPayloadBob.header, encryptPayloadBob.cipherText,
-                Protocols.CONCAT(AD, encryptPayloadBob.header));
+                encryptPayloadBob.first, encryptPayloadBob.second, AD);
         expectedStateAlice.PN = 1;
         expectedStateAlice.Ns = 0;
         expectedStateAlice.Nr = 1;
@@ -148,6 +155,38 @@ public class RatchetsTest {
         assertArrayEquals(expectedStateAlice.DHr.getEncoded(), stateAlice.DHr.getEncoded());
         assertEquals(expectedStateAlice, stateAlice);
         assertArrayEquals(plainText, decryptedPlainText1);
+
+        Log.d(getClass().getName(), stateAlice.log("Alice N0"));
+        Log.d(getClass().getName(), stateBob.log("Bob"));
+
+        // N1
+        encryptPayloadAlice =
+                ratchetAlice.ratchetEncrypt(stateAlice, plainText, AD);
+        expectedStateAlice.PN = 1;
+        expectedStateAlice.Ns = 1;
+        assertEquals(expectedStateAlice, stateAlice);
+        Log.d(getClass().getName(), stateAlice.log("Alice N1"));
+
+        // N2
+        Pair<Headers, byte[]> encryptPayloadAlice1 =
+                ratchetAlice.ratchetEncrypt(stateAlice, plainText, AD);
+        expectedStateAlice.PN = 1;
+        expectedStateAlice.Ns = 2;
+        assertEquals(expectedStateAlice, stateAlice);
+
+        Log.d(getClass().getName(), stateAlice.log("Alice N2"));
+
+        // N2
+        Log.d(getClass().getName(), "Decrypting 3");
+        decryptedPlainText = ratchetBob.ratchetDecrypt(keystoreAliasBob, stateBob,
+                encryptPayloadAlice1.first, encryptPayloadAlice1.second, AD);
+        assertArrayEquals(plainText, decryptedPlainText);
+
+        // N1
+        decryptedPlainText = ratchetBob.ratchetDecrypt(keystoreAliasBob, stateBob,
+                encryptPayloadAlice.first, encryptPayloadAlice.second, AD);
+        assertArrayEquals(plainText, decryptedPlainText);
+
     }
 }
 
