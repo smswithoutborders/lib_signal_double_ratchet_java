@@ -34,17 +34,14 @@ public class CryptoHelpers {
     }
 
     public static Mac buildVerificationHash(byte[] authKey, byte[] AD, byte[] cipherText) throws GeneralSecurityException {
-        Mac mac = HMAC(authKey);
+        Mac mac = CryptoHelpers.HMAC(authKey);
         mac.update(Bytes.concat(AD, cipherText));
         return mac;
     }
 
-    public static KeyPair buildKeyPair(PublicKey publicKey, PrivateKey privateKey) {
-        return new KeyPair(publicKey, privateKey);
-    }
-
     public static byte[] verifyCipherText(String ALGO, byte[] mk, byte[] cipherText, byte[] AD) throws Exception {
-        final int SHA256_DIGEST_LEN = 32;
+//        final int SHA256_DIGEST_LEN = 32;
+        final int SHA256_DIGEST_LEN = 64;
 
         byte[] hkdfOutput = getCipherMacParameters(ALGO, mk);
         byte[] key = new byte[32];
@@ -82,11 +79,12 @@ public class CryptoHelpers {
     }
 
     public static Mac HMAC(byte[] data) throws GeneralSecurityException {
-        String algorithm = "HmacSHA256";
-        Mac hmacSHA256 = Mac.getInstance(algorithm);
+//        String algorithm = "HmacSHA256";
+        String algorithm = "HmacSHA512";
+        Mac hmacOutput = Mac.getInstance(algorithm);
         SecretKey key = new SecretKeySpec(data, algorithm);
-        hmacSHA256.init(key);
-        return hmacSHA256;
+        hmacOutput.init(key);
+        return hmacOutput;
     }
 
     public static String convertPublicKeyToPEMFormat(byte[] publicKey) {

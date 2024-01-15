@@ -4,6 +4,7 @@ import androidx.annotation.Nullable;
 
 import com.google.common.primitives.Bytes;
 
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Arrays;
@@ -33,6 +34,6 @@ public class Headers {
 
     public byte[] getSerialized(){
         byte[] values = (PN + "," + N + ",").getBytes();
-        return Bytes.concat(values, dh.getEncoded());
+        return Bytes.concat(values, dh.getEncoded(), ",".getBytes(StandardCharsets.UTF_8));
     }
 }

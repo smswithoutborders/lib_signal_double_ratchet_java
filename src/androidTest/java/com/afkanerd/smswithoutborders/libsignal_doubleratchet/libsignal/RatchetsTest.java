@@ -107,7 +107,8 @@ public class RatchetsTest {
         assertEquals(expectedStateBob, stateBob);
 
         final byte[] plainText = CryptoHelpers.generateRandomBytes(130);
-        final byte[] AD = CryptoHelpers.generateRandomBytes(16);
+//        final byte[] AD = CryptoHelpers.generateRandomBytes(16);
+        final byte[] AD = CryptoHelpers.generateRandomBytes(128);
 
         // TODO: update this
         Pair<Headers, byte[]> encryptPayloadAlice =

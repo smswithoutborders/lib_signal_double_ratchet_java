@@ -12,8 +12,8 @@ import java.security.PublicKey;
 import java.util.Arrays;
 
 public class Ratchets {
-    public final int MAX_SKIP = 20;
-    public void ratchetInitAlice(String keystoreAlias, States state, byte[] SK,
+    public static final int MAX_SKIP = 20;
+    public static void ratchetInitAlice(String keystoreAlias, States state, byte[] SK,
                                  PublicKey dhPublicKeyBob) throws GeneralSecurityException, IOException, InterruptedException {
         state.DHs = Protocols.GENERATE_DH(keystoreAlias);
         state.DHr = dhPublicKeyBob;
@@ -22,12 +22,12 @@ public class Ratchets {
         state.CKs = kdfRkOutput.second;
     }
 
-    public void ratchetInitBob(States state, byte[] SK, KeyPair dhKeyPairBob) {
+    public static void ratchetInitBob(States state, byte[] SK, KeyPair dhKeyPairBob) {
         state.DHs = dhKeyPairBob;
         state.RK = SK;
     }
 
-    public Pair<Headers, byte[]> ratchetEncrypt(States state, byte[] plainText, byte[] AD) throws Throwable {
+    public static Pair<Headers, byte[]> ratchetEncrypt(States state, byte[] plainText, byte[] AD) throws Throwable {
         Pair<byte[], byte[]> kdfCkOutput = Protocols.KDF_CK(state.CKs);
         state.CKs = kdfCkOutput.first;
         byte[] mk = kdfCkOutput.second;
@@ -38,7 +38,7 @@ public class Ratchets {
         return new Pair<>(header, cipherText);
     }
 
-    public byte[] ratchetDecrypt(String keystoreAlias, States state, Headers header,
+    public static byte[] ratchetDecrypt(String keystoreAlias, States state, Headers header,
                                  byte[] cipherText, byte[] AD) throws Throwable {
         byte[] plainText = trySkippedMessageKeys(state, header, cipherText, AD);
         if(plainText != null)
@@ -57,7 +57,7 @@ public class Ratchets {
         return Protocols.DECRYPT(mk, cipherText, Protocols.CONCAT(AD, header));
     }
 
-    private void DHRatchet(String keystoreAlias,
+    private static void DHRatchet(String keystoreAlias,
                            States state, Headers header) throws GeneralSecurityException, IOException, InterruptedException {
         state.PN = state.Ns;
         state.Ns = 0;
@@ -75,7 +75,7 @@ public class Ratchets {
         state.CKs = kdfRkOutput.second;
     }
 
-    private byte[] trySkippedMessageKeys(States state, Headers header, byte[] cipherText, byte[] AD) throws Throwable {
+    private static byte[] trySkippedMessageKeys(States state, Headers header, byte[] cipherText, byte[] AD) throws Throwable {
         Pair<PublicKey, Integer> mkSkippedKeys = new Pair<>(header.dh, header.N);
         if(state.MKSKIPPED.containsKey(mkSkippedKeys)){
             byte[] mk = state.MKSKIPPED.get(mkSkippedKeys);
@@ -85,7 +85,7 @@ public class Ratchets {
         return null;
     }
 
-    private void skipMessageKeys(States state, int until) throws Exception {
+    private static void skipMessageKeys(States state, int until) throws Exception {
         if((state.Nr + MAX_SKIP) < until) {
             throw new Exception("Nr+Max_Skip < until");
         }
