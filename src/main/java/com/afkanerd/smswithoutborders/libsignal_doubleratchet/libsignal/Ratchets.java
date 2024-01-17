@@ -13,18 +13,20 @@ import java.util.Arrays;
 
 public class Ratchets {
     public static final int MAX_SKIP = 20;
-    public static void ratchetInitAlice(String keystoreAlias, States state, byte[] SK,
+    public static States ratchetInitAlice(String keystoreAlias, States state, byte[] SK,
                                  PublicKey dhPublicKeyBob) throws GeneralSecurityException, IOException, InterruptedException {
         state.DHs = Protocols.GENERATE_DH(keystoreAlias);
         state.DHr = dhPublicKeyBob;
         Pair<byte[], byte[]> kdfRkOutput = Protocols.KDF_RK(SK, Protocols.DH(state.DHs, state.DHr));
         state.RK = kdfRkOutput.first;
         state.CKs = kdfRkOutput.second;
+        return state;
     }
 
-    public static void ratchetInitBob(States state, byte[] SK, KeyPair dhKeyPairBob) {
+    public static States ratchetInitBob(States state, byte[] SK, KeyPair dhKeyPairBob) {
         state.DHs = dhKeyPairBob;
         state.RK = SK;
+        return state;
     }
 
     public static Pair<Headers, byte[]> ratchetEncrypt(States state, byte[] plainText, byte[] AD) throws Throwable {

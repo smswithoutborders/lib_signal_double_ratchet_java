@@ -46,10 +46,7 @@ public class States {
 
     Map<Pair<PublicKey, Integer>, byte[]> MKSKIPPED = new HashMap<>();
 
-    GsonBuilder gsonBuilder = new GsonBuilder();
 
-    static {
-    }
     public static class StatesKeyPairSerializer implements JsonSerializer<KeyPair> {
         @Override
         public JsonElement serialize(KeyPair src, Type typeOfSrc, JsonSerializationContext context) {
@@ -95,8 +92,62 @@ public class States {
         this.PN= PN;
     }
 
-    public States(String states) throws JSONException, NoSuchAlgorithmException, InvalidKeySpecException {
+    boolean valid = false;
+
+    public boolean isDefaultState() {
+        return this.DHs != null && this.DHr != null && this.RK != null && this.CKs != null &&
+                this.CKr != null && this.Ns == 0 && this.Nr == 0 && this.PN == 0;
+    }
+
+    public boolean isValid(){
+        return this.DHs != null &&
+                this.DHr != null &&
+                this.RK != null &&
+                this.CKs != null &&
+                this.CKr == null &&
+                this.Ns == 0 && this.Nr == 0 &&
+                this.PN == 0 && this.MKSKIPPED.isEmpty();
+    }
+
+    /**
+     * Returns true of the values required to be initialized by Alice has been initialized.
+     *
+     * @return
+     */
+    public boolean isAliceInitialized() {
+//        return this.DHs != null &&
+//                this.DHr != null &&
+//                this.RK != null &&
+//                this.CKs != null &&
+//                this.CKr == null &&
+//                this.Ns == 0 && this.Nr == 0 &&
+//                this.PN == 0 && this.MKSKIPPED.isEmpty();
+        return this.Ns > 0 && this.Nr == 0;
+    }
+
+    /**
+     * Returns true of the values required to be initialized by Bob has been initialized.
+     *
+     * @return
+     */
+    public boolean isBobInitialized() {
+//        return this.DHs != null &&
+//                this.DHr == null &&
+//                this.RK != null &&
+//                this.CKs == null &&
+//                this.CKr == null &&
+//                this.Ns == 0 && this.Nr == 0 &&
+//                this.PN == 0 && this.MKSKIPPED.isEmpty();
+        return this.Ns == 0 && this.Nr == 0;
+    }
+
+
+    public States(KeyPair DHs, String states) throws JSONException, NoSuchAlgorithmException, InvalidKeySpecException {
+        if(states == null)
+            return;
+
         JSONObject jsonObject = new JSONObject(states);
+        this.DHs = DHs;
         this.DHr = SecurityECDH.buildPublicKey(Base64.decode(jsonObject.getString("DHr"),
                 Base64.DEFAULT));
         this.RK = Base64.decode(jsonObject.getString("DHs"), Base64.DEFAULT);
@@ -105,12 +156,14 @@ public class States {
         this.Ns = jsonObject.getInt("Ns");
         this.Nr = jsonObject.getInt("Nr");
         this.PN = jsonObject.getInt("PN");
+        valid = true;
     }
 
     public States() {
     }
 
     public String getSerializedStates() {
+        GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(KeyPair.class, new StatesKeyPairSerializer());
         gsonBuilder.registerTypeAdapter(PublicKey.class, new StatesPublicKeySerializer());
         gsonBuilder.registerTypeAdapter(byte[].class, new StatesBytesSerializer());
