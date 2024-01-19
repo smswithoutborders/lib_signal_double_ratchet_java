@@ -1,5 +1,6 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal;
 
+import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.Nullable;
@@ -7,6 +8,7 @@ import androidx.annotation.Nullable;
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoHelpers;
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityECDH;
 import com.google.crypto.tink.subtle.Base64;
+import com.google.crypto.tink.subtle.Bytes;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -46,101 +48,7 @@ public class States {
 
     Map<Pair<PublicKey, Integer>, byte[]> MKSKIPPED = new HashMap<>();
 
-
-    public static class StatesKeyPairSerializer implements JsonSerializer<KeyPair> {
-        @Override
-        public JsonElement serialize(KeyPair src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive(
-                    Base64.encodeToString(src.getPublic().getEncoded(), Base64.DEFAULT));
-        }
-    }
-
-    public static class StatesPublicKeySerializer implements JsonSerializer<PublicKey> {
-        @Override
-        public JsonElement serialize(PublicKey src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive(Base64.encodeToString(src.getEncoded(), Base64.DEFAULT));
-        }
-    }
-
-    public static class StatesBytesSerializer implements JsonSerializer<byte[]> {
-        @Override
-        public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive( Base64.encodeToString(src, Base64.DEFAULT));
-        }
-    }
-
-    public static class StateKeysSerializer implements JsonSerializer<KeyPair> {
-
-        @Override
-        public JsonElement serialize(KeyPair src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive(
-                    Base64.encodeToString(src.getPublic().getEncoded(), Base64.DEFAULT));
-        }
-    }
-
-    public States(KeyPair DHs,
-                  PublicKey DHr,
-                  byte[] RK, byte[] CKs, byte[] CKr,
-                  int Ns, int Nr, int PN) {
-        this.DHs = DHs;
-        this.DHr = DHr;
-        this.RK = RK;
-        this.CKs = CKs;
-        this.CKr = CKr;
-        this.Ns = Ns;
-        this.Nr = Nr;
-        this.PN= PN;
-    }
-
     boolean valid = false;
-
-    public boolean isDefaultState() {
-        return this.DHs != null && this.DHr != null && this.RK != null && this.CKs != null &&
-                this.CKr != null && this.Ns == 0 && this.Nr == 0 && this.PN == 0;
-    }
-
-    public boolean isValid(){
-        return this.DHs != null &&
-                this.DHr != null &&
-                this.RK != null &&
-                this.CKs != null &&
-                this.CKr == null &&
-                this.Ns == 0 && this.Nr == 0 &&
-                this.PN == 0 && this.MKSKIPPED.isEmpty();
-    }
-
-    /**
-     * Returns true of the values required to be initialized by Alice has been initialized.
-     *
-     * @return
-     */
-    public boolean isAliceInitialized() {
-//        return this.DHs != null &&
-//                this.DHr != null &&
-//                this.RK != null &&
-//                this.CKs != null &&
-//                this.CKr == null &&
-//                this.Ns == 0 && this.Nr == 0 &&
-//                this.PN == 0 && this.MKSKIPPED.isEmpty();
-        return this.Ns > 0 && this.Nr == 0;
-    }
-
-    /**
-     * Returns true of the values required to be initialized by Bob has been initialized.
-     *
-     * @return
-     */
-    public boolean isBobInitialized() {
-//        return this.DHs != null &&
-//                this.DHr == null &&
-//                this.RK != null &&
-//                this.CKs == null &&
-//                this.CKr == null &&
-//                this.Ns == 0 && this.Nr == 0 &&
-//                this.PN == 0 && this.MKSKIPPED.isEmpty();
-        return this.Ns == 0 && this.Nr == 0;
-    }
-
 
     public States(KeyPair DHs, String states) throws JSONException, NoSuchAlgorithmException, InvalidKeySpecException {
         if(states == null)
@@ -148,9 +56,10 @@ public class States {
 
         JSONObject jsonObject = new JSONObject(states);
         this.DHs = DHs;
-        this.DHr = SecurityECDH.buildPublicKey(Base64.decode(jsonObject.getString("DHr"),
-                Base64.DEFAULT));
-        this.RK = Base64.decode(jsonObject.getString("DHs"), Base64.DEFAULT);
+        if(!jsonObject.getString("DHr").equals("null"))
+            this.DHr = SecurityECDH.buildPublicKey(Base64.decode(jsonObject.getString("DHr"),
+                    Base64.DEFAULT));
+        this.RK = Base64.decode(jsonObject.getString("RK"), Base64.DEFAULT);
         this.CKs = Base64.decode(jsonObject.getString("CKs"), Base64.DEFAULT);
         this.CKr = Base64.decode(jsonObject.getString("CKr"), Base64.DEFAULT);
         this.Ns = jsonObject.getInt("Ns");
@@ -182,6 +91,9 @@ public class States {
                             Arrays.equals(state.DHr.getEncoded(), this.DHr.getEncoded()))
                     || Objects.equals(state.DHr, this.DHr)) &&
                     state.MKSKIPPED.equals(this.MKSKIPPED) &&
+                    Bytes.equal(state.RK, this.RK) &&
+                    Bytes.equal(state.CKr, this.CKr) &&
+                    Bytes.equal(state.CKs, this.CKs) &&
                     state.Ns == this.Ns &&
                     state.Nr == this.Nr &&
                     state.PN == this.PN;
@@ -199,4 +111,27 @@ public class States {
                 name + " - Nr: " + Nr + "\n" +
                 name + " - PN: " + PN;
     }
+
+    public static class StatesKeyPairSerializer implements JsonSerializer<KeyPair> {
+        @Override
+        public JsonElement serialize(KeyPair src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(
+                    Base64.encodeToString(src.getPublic().getEncoded(), Base64.DEFAULT));
+        }
+    }
+
+    public static class StatesPublicKeySerializer implements JsonSerializer<PublicKey> {
+        @Override
+        public JsonElement serialize(PublicKey src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(Base64.encodeToString(src.getEncoded(), Base64.DEFAULT));
+        }
+    }
+
+    public static class StatesBytesSerializer implements JsonSerializer<byte[]> {
+        @Override
+        public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive( Base64.encodeToString(src, Base64.DEFAULT));
+        }
+    }
+
 }

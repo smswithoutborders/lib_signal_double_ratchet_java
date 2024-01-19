@@ -1,10 +1,19 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal;
 
+import android.util.Base64;
+import android.util.Log;
+
 import androidx.annotation.Nullable;
 
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityECDH;
 import com.google.common.primitives.Bytes;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -14,7 +23,7 @@ import java.util.Arrays;
 
 public class Headers {
 
-    PublicKey dh;
+    public PublicKey dh;
     public int PN;
     public int N;
 
@@ -27,15 +36,40 @@ public class Headers {
     public Headers() {}
 
     public byte[] deSerializeHeader(byte[] serializedHeader) throws NoSuchAlgorithmException, InvalidKeySpecException,
-            NumberFormatException{
-        String header = new String(serializedHeader, StandardCharsets.UTF_8);
-        String[] splitHeader = header.split(",");
-        this.PN = Integer.parseInt(splitHeader[0]);
-        this.N = Integer.parseInt(splitHeader[1]);
-        this.dh = SecurityECDH.buildPublicKey(splitHeader[2].getBytes(StandardCharsets.UTF_8));
+            NumberFormatException, IOException, ClassNotFoundException {
+        byte[] bytesLen = new byte[4];
+        System.arraycopy(serializedHeader, 0, bytesLen, 0, 4);
+        int len = ByteBuffer.wrap(bytesLen).getInt();
 
-        splitHeader = Arrays.copyOfRange(splitHeader, 3, splitHeader.length);
-        return String.join(",", splitHeader).getBytes(StandardCharsets.UTF_8);
+        byte[] bytesPN = new byte[4];
+        System.arraycopy(serializedHeader, 4, bytesPN, 0, 4);
+        this.PN = ByteBuffer.wrap(bytesPN).getInt();
+
+        byte[] bytesN = new byte[4];
+        System.arraycopy(serializedHeader, 8, bytesN, 0, 4);
+        this.N = ByteBuffer.wrap(bytesN).getInt();
+
+        byte[] pubKey = new byte[len - 12];
+        System.arraycopy(serializedHeader, 12, pubKey, 0, pubKey.length);
+        this.dh = SecurityECDH.buildPublicKey(pubKey);
+
+        if(serializedHeader.length > len) {
+            byte[] buffer = new byte[serializedHeader.length - len];
+            System.arraycopy(serializedHeader, 12 + pubKey.length, buffer, 0, buffer.length);
+            return buffer;
+        }
+        return null;
+
+//        String header = new String(serializedHeader, StandardCharsets.UTF_8);
+//        String[] splitHeader = header.split(",");
+//        this.PN = Integer.parseInt(splitHeader[0]);
+//        this.N = Integer.parseInt(splitHeader[1]);
+//        Log.d(getClass().getName(), "Deserializing: " + splitHeader[2]);
+//        this.dh = SecurityECDH.buildPublicKey(
+//                Base64.decode(splitHeader[2].getBytes(), Base64.DEFAULT));
+//
+//        String[] payload = Arrays.copyOfRange(splitHeader, 3, splitHeader.length);
+//        return String.join(",", payload).getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
@@ -49,8 +83,27 @@ public class Headers {
         return false;
     }
 
-    public byte[] getSerialized(){
-        byte[] values = (PN + "," + N + ",").getBytes();
-        return Bytes.concat(values, dh.getEncoded(), ",".getBytes(StandardCharsets.UTF_8));
+    public byte[] getSerialized() throws IOException {
+//        byte[] values = (PN + "," + N + ",").getBytes(StandardCharsets.UTF_8);
+//        return Bytes.concat(values, Base64.encode(dh.getEncoded(), Base64.DEFAULT),
+//                ",".getBytes(StandardCharsets.UTF_8));
+        byte[] bytesPN = new byte[4];
+        ByteBuffer.wrap(bytesPN).putInt(this.PN);
+
+        byte[] bytesN = new byte[4];
+        ByteBuffer.wrap(bytesN).putInt(this.N);
+
+        byte[] pubKey = this.dh.getEncoded();
+
+        int len = 4 + bytesPN.length + bytesN.length + pubKey.length;
+        byte[] bytesLen = new byte[4];
+        ByteBuffer.wrap(bytesLen).putInt(len);
+
+        return Bytes.concat(bytesLen, bytesPN, bytesN, pubKey);
+
+//        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//        ObjectOutputStream outputStream = new ObjectOutputStream(byteArrayOutputStream);
+//        outputStream.writeObject(this);
+//        return byteArrayOutputStream.toByteArray();
     }
 }

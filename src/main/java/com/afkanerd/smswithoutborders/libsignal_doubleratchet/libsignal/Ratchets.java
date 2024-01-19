@@ -13,14 +13,24 @@ import java.util.Arrays;
 
 public class Ratchets {
     public static final int MAX_SKIP = 20;
-    public static States ratchetInitAlice(String keystoreAlias, States state, byte[] SK,
+    public static Pair<States, byte[]> ratchetInitAlice(String keystoreAlias, States state, byte[] SK,
                                  PublicKey dhPublicKeyBob) throws GeneralSecurityException, IOException, InterruptedException {
-        state.DHs = Protocols.GENERATE_DH(keystoreAlias);
+        Pair<KeyPair, byte[]> output = Protocols.GENERATE_DH(keystoreAlias);
+        state.DHs = output.first;
         state.DHr = dhPublicKeyBob;
-        Pair<byte[], byte[]> kdfRkOutput = Protocols.KDF_RK(SK, Protocols.DH(state.DHs, state.DHr));
+        byte[] dh_out = Protocols.DH(state.DHs, state.DHr);
+        Log.d(Ratchets.class.getName(), "Alice DH Out: " +
+                Base64.encodeToString(dh_out, Base64.DEFAULT));
+        Log.d(Ratchets.class.getName(), "Alice SK: " +
+                Base64.encodeToString(SK, Base64.DEFAULT));
+        Pair<byte[], byte[]> kdfRkOutput = Protocols.KDF_RK(SK, dh_out);
         state.RK = kdfRkOutput.first;
         state.CKs = kdfRkOutput.second;
-        return state;
+//        Log.d(Ratchets.class.getName(), "Alice DHs: " +
+//                Base64.encodeToString(state.DHs.getPublic().getEncoded(), Base64.DEFAULT));
+//        Log.d(Ratchets.class.getName(), "Alice DHr: " +
+//                Base64.encodeToString(state.DHr.getEncoded(), Base64.DEFAULT));
+        return new Pair<>(state, output.second);
     }
 
     public static States ratchetInitBob(States state, byte[] SK, KeyPair dhKeyPairBob) {
@@ -36,7 +46,12 @@ public class Ratchets {
         Headers header = Protocols.HEADER(state.DHs, state.PN, state.Ns);
         state.Ns += 1;
 
+//        byte[] concatADHeader = Protocols.CONCAT(AD, header);
         byte[] cipherText = Protocols.ENCRYPT(mk, plainText, Protocols.CONCAT(AD, header));
+        Log.d(Ratchets.class.getName(), "Alice CKs: " +
+                Base64.encodeToString(state.CKs, Base64.DEFAULT));
+        Log.d(Ratchets.class.getName(), "Encrypt mk: " +
+                Base64.encodeToString(mk, Base64.DEFAULT));
         return new Pair<>(header, cipherText);
     }
 
@@ -53,6 +68,8 @@ public class Ratchets {
         }
         skipMessageKeys(state, header.N);
         Pair<byte[], byte[]> kdfCkOutput = Protocols.KDF_CK(state.CKr);
+        Log.d(Ratchets.class.getName(), "Bob CKr: " +
+                Base64.encodeToString(state.CKr, Base64.DEFAULT));
         state.CKr = kdfCkOutput.first;
         byte[] mk = kdfCkOutput.second;
         state.Nr += 1;
@@ -65,12 +82,18 @@ public class Ratchets {
         state.Ns = 0;
         state.Nr = 0;
         state.DHr = header.dh;
-
-        Pair<byte[], byte[]> kdfRkOutput = Protocols.KDF_RK(state.RK, Protocols.DH(state.DHs, state.DHr));
+        byte[] dh_out = Protocols.DH(state.DHs, state.DHr);
+        Log.d(Ratchets.class.getName(), "Bob DH Out: " +
+                Base64.encodeToString(dh_out, Base64.DEFAULT));
+        Log.d(Ratchets.class.getName(), "Bob RK: " +
+                Base64.encodeToString(state.RK, Base64.DEFAULT));
+        Pair<byte[], byte[]> kdfRkOutput = Protocols.KDF_RK(state.RK, dh_out);
         state.RK = kdfRkOutput.first;
         state.CKr = kdfRkOutput.second;
 
-        state.DHs = Protocols.GENERATE_DH(keystoreAlias);
+        // TODO: should store the key in second
+//        state.DHs = Protocols.GENERATE_DH(keystoreAlias);
+        state.DHs = Protocols.GENERATE_DH(keystoreAlias).first;
 
         kdfRkOutput = Protocols.KDF_RK(state.RK, Protocols.DH(state.DHs, state.DHr));
         state.RK = kdfRkOutput.first;

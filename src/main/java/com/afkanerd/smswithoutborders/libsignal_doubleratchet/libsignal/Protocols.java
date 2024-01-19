@@ -16,6 +16,7 @@ import com.google.common.primitives.Bytes;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.PublicKey;
 
@@ -41,8 +42,12 @@ public class Protocols {
     final static int HKDF_NUM_KEYS = 2;
     final static String ALGO = "HMACSHA512";
 
-    public static KeyPair GENERATE_DH(String keystoreAlias) throws GeneralSecurityException, IOException, InterruptedException {
-        return SecurityECDH.generateKeyPair(keystoreAlias).first;
+    public static Pair<KeyPair, byte[]> GENERATE_DH(String keystoreAlias) throws GeneralSecurityException, IOException, InterruptedException {
+        /**
+         * First = keypair
+         * Second = encrypted private key, because versioning
+         */
+        return SecurityECDH.generateKeyPair(keystoreAlias);
     }
 
     public static byte[] DH(KeyPair dhPair, PublicKey publicKey) throws GeneralSecurityException, IOException, InterruptedException {
@@ -91,7 +96,7 @@ public class Protocols {
         return new Headers(dhPair, PN, N);
     }
 
-    public static byte[] CONCAT(byte[] AD, Headers headers) {
+    public static byte[] CONCAT(byte[] AD, Headers headers) throws IOException {
         return Bytes.concat(AD, headers.getSerialized());
     }
 
