@@ -61,16 +61,6 @@ public class CryptoHelpers {
         byte[] reconstructedMac =
                 buildVerificationHash(authenticationKey, AD, extractedCipherText)
                         .doFinal();
-//        Log.d(CryptoHelpers.class.getName(), "Verify inptu ciphertext: " +
-//                Base64.encodeToString(cipherText, Base64.DEFAULT));
-//        Log.d(CryptoHelpers.class.getName(), "Verify ciphertext: " +
-//                Base64.encodeToString(extractedCipherText, Base64.DEFAULT));
-//        Log.d(CryptoHelpers.class.getName(), "Verify mac: " +
-//                Base64.encodeToString(reconstructedMac, Base64.DEFAULT));
-        Log.d(CryptoHelpers.class.getName(), "Verify mk: " +
-                Base64.encodeToString(mk, Base64.DEFAULT));
-        Log.d(CryptoHelpers.class.getName(), "Verify mac: " +
-                Base64.encodeToString(reconstructedMac, Base64.DEFAULT));
         if(Arrays.equals(macValue, reconstructedMac)) {
             return extractedCipherText;
         }

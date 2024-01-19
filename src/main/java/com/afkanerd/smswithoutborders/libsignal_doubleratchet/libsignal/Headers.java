@@ -59,17 +59,6 @@ public class Headers {
             return buffer;
         }
         return null;
-
-//        String header = new String(serializedHeader, StandardCharsets.UTF_8);
-//        String[] splitHeader = header.split(",");
-//        this.PN = Integer.parseInt(splitHeader[0]);
-//        this.N = Integer.parseInt(splitHeader[1]);
-//        Log.d(getClass().getName(), "Deserializing: " + splitHeader[2]);
-//        this.dh = SecurityECDH.buildPublicKey(
-//                Base64.decode(splitHeader[2].getBytes(), Base64.DEFAULT));
-//
-//        String[] payload = Arrays.copyOfRange(splitHeader, 3, splitHeader.length);
-//        return String.join(",", payload).getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
@@ -84,9 +73,6 @@ public class Headers {
     }
 
     public byte[] getSerialized() throws IOException {
-//        byte[] values = (PN + "," + N + ",").getBytes(StandardCharsets.UTF_8);
-//        return Bytes.concat(values, Base64.encode(dh.getEncoded(), Base64.DEFAULT),
-//                ",".getBytes(StandardCharsets.UTF_8));
         byte[] bytesPN = new byte[4];
         ByteBuffer.wrap(bytesPN).putInt(this.PN);
 
@@ -100,10 +86,5 @@ public class Headers {
         ByteBuffer.wrap(bytesLen).putInt(len);
 
         return Bytes.concat(bytesLen, bytesPN, bytesN, pubKey);
-
-//        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-//        ObjectOutputStream outputStream = new ObjectOutputStream(byteArrayOutputStream);
-//        outputStream.writeObject(this);
-//        return byteArrayOutputStream.toByteArray();
     }
 }
