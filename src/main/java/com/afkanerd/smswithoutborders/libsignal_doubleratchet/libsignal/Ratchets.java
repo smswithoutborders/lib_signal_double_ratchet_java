@@ -19,6 +19,8 @@ public class Ratchets {
         state.DHs = output.first;
         state.DHr = dhPublicKeyBob;
         byte[] dh_out = Protocols.DH(state.DHs, state.DHr);
+        Log.d(Ratchets.class.getName(), "Alice DHr: " +
+                Base64.encodeToString(state.DHr.getEncoded(), Base64.DEFAULT));
         Log.d(Ratchets.class.getName(), "Alice DH Out: " +
                 Base64.encodeToString(dh_out, Base64.DEFAULT));
         Log.d(Ratchets.class.getName(), "Alice SK: " +
@@ -48,6 +50,8 @@ public class Ratchets {
 
 //        byte[] concatADHeader = Protocols.CONCAT(AD, header);
         byte[] cipherText = Protocols.ENCRYPT(mk, plainText, Protocols.CONCAT(AD, header));
+        Log.d(Ratchets.class.getName(), "Alice DHs: " +
+                Base64.encodeToString(state.DHs.getPublic().getEncoded(), Base64.DEFAULT));
         Log.d(Ratchets.class.getName(), "Alice CKs: " +
                 Base64.encodeToString(state.CKs, Base64.DEFAULT));
         Log.d(Ratchets.class.getName(), "Encrypt mk: " +
@@ -83,6 +87,10 @@ public class Ratchets {
         state.Nr = 0;
         state.DHr = header.dh;
         byte[] dh_out = Protocols.DH(state.DHs, state.DHr);
+        Log.d(Ratchets.class.getName(), "Bob DHr: " +
+                Base64.encodeToString(state.DHr.getEncoded(), Base64.DEFAULT));
+        Log.d(Ratchets.class.getName(), "Bob DHs: " +
+                Base64.encodeToString(state.DHs.getPublic().getEncoded(), Base64.DEFAULT));
         Log.d(Ratchets.class.getName(), "Bob DH Out: " +
                 Base64.encodeToString(dh_out, Base64.DEFAULT));
         Log.d(Ratchets.class.getName(), "Bob RK: " +
