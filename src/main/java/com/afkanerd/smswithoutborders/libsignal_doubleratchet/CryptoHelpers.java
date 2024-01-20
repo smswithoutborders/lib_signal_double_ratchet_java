@@ -89,7 +89,7 @@ public class CryptoHelpers {
 
     public static String convertPublicKeyToPEMFormat(byte[] publicKey) {
         return pemStartPrefix
-                + Base64.encodeToString(publicKey, Base64.DEFAULT) +
+                + Base64.encodeToString(publicKey, Base64.NO_WRAP) +
                 pemEndPrefix;
     }
 

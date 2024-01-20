@@ -58,10 +58,10 @@ public class States {
         this.DHs = DHs;
         if(!jsonObject.getString("DHr").equals("null"))
             this.DHr = SecurityECDH.buildPublicKey(Base64.decode(jsonObject.getString("DHr"),
-                    Base64.DEFAULT));
-        this.RK = Base64.decode(jsonObject.getString("RK"), Base64.DEFAULT);
-        this.CKs = Base64.decode(jsonObject.getString("CKs"), Base64.DEFAULT);
-        this.CKr = Base64.decode(jsonObject.getString("CKr"), Base64.DEFAULT);
+                    Base64.NO_WRAP));
+        this.RK = Base64.decode(jsonObject.getString("RK"), Base64.NO_WRAP);
+        this.CKs = Base64.decode(jsonObject.getString("CKs"), Base64.NO_WRAP);
+        this.CKr = Base64.decode(jsonObject.getString("CKr"), Base64.NO_WRAP);
         this.Ns = jsonObject.getInt("Ns");
         this.Nr = jsonObject.getInt("Nr");
         this.PN = jsonObject.getInt("PN");
@@ -102,11 +102,11 @@ public class States {
     }
 
     public String log(String name) {
-        return name + " - DHs: " + Base64.encodeToString(DHs.getPublic().getEncoded(), Base64.DEFAULT) + "\n" +
-                name + " - DHr: " + Base64.encodeToString(DHr.getEncoded(), Base64.DEFAULT) + "\n" +
-                name + " - RK: " + Base64.encodeToString(RK, Base64.DEFAULT) + "\n" +
-                name + " - CKs: " + Base64.encodeToString(CKs, Base64.DEFAULT) + "\n" +
-                name + " - CKr: " + Base64.encodeToString(CKr, Base64.DEFAULT) + "\n" +
+        return name + " - DHs: " + Base64.encodeToString(DHs.getPublic().getEncoded(), Base64.NO_WRAP) + "\n" +
+                name + " - DHr: " + Base64.encodeToString(DHr.getEncoded(), Base64.NO_WRAP) + "\n" +
+                name + " - RK: " + Base64.encodeToString(RK, Base64.NO_WRAP) + "\n" +
+                name + " - CKs: " + Base64.encodeToString(CKs, Base64.NO_WRAP) + "\n" +
+                name + " - CKr: " + Base64.encodeToString(CKr, Base64.NO_WRAP) + "\n" +
                 name + " - Ns: " + Ns + "\n" +
                 name + " - Nr: " + Nr + "\n" +
                 name + " - PN: " + PN;
@@ -116,21 +116,21 @@ public class States {
         @Override
         public JsonElement serialize(KeyPair src, Type typeOfSrc, JsonSerializationContext context) {
             return new JsonPrimitive(
-                    Base64.encodeToString(src.getPublic().getEncoded(), Base64.DEFAULT));
+                    Base64.encodeToString(src.getPublic().getEncoded(), Base64.NO_WRAP));
         }
     }
 
     public static class StatesPublicKeySerializer implements JsonSerializer<PublicKey> {
         @Override
         public JsonElement serialize(PublicKey src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive(Base64.encodeToString(src.getEncoded(), Base64.DEFAULT));
+            return new JsonPrimitive(Base64.encodeToString(src.getEncoded(), Base64.NO_WRAP));
         }
     }
 
     public static class StatesBytesSerializer implements JsonSerializer<byte[]> {
         @Override
         public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive( Base64.encodeToString(src, Base64.DEFAULT));
+            return new JsonPrimitive( Base64.encodeToString(src, Base64.NO_WRAP));
         }
     }
 
