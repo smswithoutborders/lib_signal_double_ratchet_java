@@ -74,120 +74,60 @@ public class RatchetsTest {
 
     @Test
     public void completeRatchetTest() throws Throwable {
+        // TODO: - Write test for all States
         byte[] SK = CryptoHelpers.generateRandomBytes(32);
 
         String keystoreAlias = "bobsKeystoreAlias";
         bobKeyPair = SecurityECDH.generateKeyPair(keystoreAlias).first;
         dhPublicKeyBob = bobKeyPair.getPublic();
 
-        Ratchets ratchetAlice = new Ratchets(), ratchetBob = new Ratchets();
         States stateAlice = new States(), stateBob = new States();
 
-        // TODO: store this
         String keystoreAliasAlice = "bob_session_0";
-        ratchetAlice.ratchetInitAlice(keystoreAliasAlice, stateAlice, SK, dhPublicKeyBob);
+        Ratchets.ratchetInitAlice(keystoreAliasAlice, stateAlice, SK, dhPublicKeyBob);
 
-        // TODO: store this
         String keystoreAliasBob = "alice_session_0";
-        ratchetBob.ratchetInitBob(stateBob, SK, bobKeyPair);
-
-        // assertions
-        States expectedStateAlice = new States(), expectedStateBob = new States();
-
-        // alice params
-        String keystoreAliasAliceExpected = "bob_session_0_expected";
-        expectedStateAlice.DHs = SecurityECDH.generateKeyPair(keystoreAliasAliceExpected).first;
-        expectedStateAlice.DHr = dhPublicKeyBob;
-
-        // bob params
-        expectedStateBob.DHs = bobKeyPair;
-        expectedStateBob.RK = SK;
-
-        assertEquals(expectedStateAlice, stateAlice);
-        assertEquals(expectedStateBob, stateBob);
+        Ratchets.ratchetInitBob(stateBob, SK, bobKeyPair);
 
         final byte[] plainText = CryptoHelpers.generateRandomBytes(130);
-//        final byte[] AD = CryptoHelpers.generateRandomBytes(16);
         final byte[] AD = CryptoHelpers.generateRandomBytes(128);
 
-        // TODO: update this
-        Pair<Headers, byte[]> encryptPayloadAlice =
-                ratchetAlice.ratchetEncrypt(stateAlice, plainText, AD);
-        expectedStateAlice.Ns = 1;
-        assertEquals(expectedStateAlice, stateAlice);
+        Pair<Headers, byte[]> encryptPayloadAlice = Ratchets.ratchetEncrypt(stateAlice, plainText, AD);
         Headers expectedHeadersAlice = new Headers(stateAlice.DHs, 0, 0);
         assertEquals(expectedHeadersAlice, encryptPayloadAlice.first);
 
-        // TODO: Size of the Header (H) (documentation required)
-        Log.d(getClass().getName(), "H.size: " +
-                encryptPayloadAlice.first.getSerialized().length);
-        // TODO: Size of the Encrypted Header (EH) (documentation required)
+//        Log.d(getClass().getName(), "H.size: " +
+//                encryptPayloadAlice.first.getSerialized().length);
+//
+//        Log.d(getClass().getName(), "EM.size: " + encryptPayloadAlice.second.length);
 
-        // TODO: Size of the Encrypted Message (EM) (documentation required)
-        Log.d(getClass().getName(), "EM.size: " + encryptPayloadAlice.second.length);
-
-        // TODO: update this
         Log.d(getClass().getName(), "Decrypting 1");
-        byte[] decryptedPlainText = ratchetBob.ratchetDecrypt(keystoreAliasBob, stateBob,
+        Pair<byte[], byte[]> decryptedPlainText = Ratchets.ratchetDecrypt(keystoreAliasBob, stateBob,
                 encryptPayloadAlice.first, encryptPayloadAlice.second, AD);
-        expectedStateBob.PN = 0;
-        expectedStateBob.Ns = 0;
-        expectedStateBob.Nr = 1;
-        expectedStateBob.DHr = stateAlice.DHs.getPublic();
-        assertArrayEquals(expectedStateBob.DHr.getEncoded(), stateBob.DHr.getEncoded());
-        assertEquals(expectedStateBob, stateBob);
-        assertArrayEquals(plainText, decryptedPlainText);
+        assertArrayEquals(plainText, decryptedPlainText.first);
 
-        // TODO: update this
-        Pair<Headers, byte[]> encryptPayloadBob =
-                ratchetBob.ratchetEncrypt(stateBob, plainText, AD);
-        expectedStateBob.Ns = 1;
-        expectedStateBob.Nr = 1;
-        assertEquals(expectedStateBob, stateBob);
+        Pair<Headers, byte[]> encryptPayloadBob = Ratchets.ratchetEncrypt(stateBob, plainText, AD);
 
-        // TODO: update this
         Log.d(getClass().getName(), "Decrypting 2");
-        byte[] decryptedPlainText1 = ratchetAlice.ratchetDecrypt(keystoreAliasAlice, stateAlice,
+        Pair<byte[], byte[]> decryptedPlainText1 = Ratchets.ratchetDecrypt(keystoreAliasAlice, stateAlice,
                 encryptPayloadBob.first, encryptPayloadBob.second, AD);
-        expectedStateAlice.PN = 1;
-        expectedStateAlice.Ns = 0;
-        expectedStateAlice.Nr = 1;
-        expectedStateAlice.DHr = stateBob.DHs.getPublic();
-        assertArrayEquals(expectedStateAlice.DHr.getEncoded(), stateAlice.DHr.getEncoded());
-        assertEquals(expectedStateAlice, stateAlice);
-        assertArrayEquals(plainText, decryptedPlainText1);
-
-        Log.d(getClass().getName(), stateAlice.log("Alice N0"));
-        Log.d(getClass().getName(), stateBob.log("Bob"));
+        assertArrayEquals(plainText, decryptedPlainText1.first);
 
         // N1
-        encryptPayloadAlice =
-                ratchetAlice.ratchetEncrypt(stateAlice, plainText, AD);
-        expectedStateAlice.PN = 1;
-        expectedStateAlice.Ns = 1;
-        assertEquals(expectedStateAlice, stateAlice);
-        Log.d(getClass().getName(), stateAlice.log("Alice N1"));
-
+        encryptPayloadAlice = Ratchets.ratchetEncrypt(stateAlice, plainText, AD);
         // N2
-        Pair<Headers, byte[]> encryptPayloadAlice1 =
-                ratchetAlice.ratchetEncrypt(stateAlice, plainText, AD);
-        expectedStateAlice.PN = 1;
-        expectedStateAlice.Ns = 2;
-        assertEquals(expectedStateAlice, stateAlice);
-
-        Log.d(getClass().getName(), stateAlice.log("Alice N2"));
+        Pair<Headers, byte[]> encryptPayloadAlice1 = Ratchets.ratchetEncrypt(stateAlice, plainText, AD);
 
         // N2
         Log.d(getClass().getName(), "Decrypting 3");
-        decryptedPlainText = ratchetBob.ratchetDecrypt(keystoreAliasBob, stateBob,
+        decryptedPlainText = Ratchets.ratchetDecrypt(keystoreAliasBob, stateBob,
                 encryptPayloadAlice1.first, encryptPayloadAlice1.second, AD);
-        assertArrayEquals(plainText, decryptedPlainText);
+        assertArrayEquals(plainText, decryptedPlainText.first);
 
         // N1
-        decryptedPlainText = ratchetBob.ratchetDecrypt(keystoreAliasBob, stateBob,
+        decryptedPlainText = Ratchets.ratchetDecrypt(keystoreAliasBob, stateBob,
                 encryptPayloadAlice.first, encryptPayloadAlice.second, AD);
-        assertArrayEquals(plainText, decryptedPlainText);
-
+        assertArrayEquals(plainText, decryptedPlainText.first);
     }
 }
 

@@ -7,16 +7,20 @@ import androidx.annotation.Nullable;
 
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoHelpers;
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityECDH;
+import com.google.common.reflect.TypeToken;
 import com.google.crypto.tink.subtle.Base64;
 import com.google.crypto.tink.subtle.Bytes;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
+
 import com.google.gson.JsonSerializer;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -46,9 +50,10 @@ public class States {
 
     public int PN = 0;
 
-    Map<Pair<PublicKey, Integer>, byte[]> MKSKIPPED = new HashMap<>();
+    public Map<Pair<PublicKey, Integer>, byte[]> MKSKIPPED = new HashMap<>();
 
     boolean valid = false;
+
 
     public States(KeyPair DHs, String states) throws JSONException, NoSuchAlgorithmException, InvalidKeySpecException {
         if(states == null)
@@ -65,7 +70,24 @@ public class States {
         this.Ns = jsonObject.getInt("Ns");
         this.Nr = jsonObject.getInt("Nr");
         this.PN = jsonObject.getInt("PN");
-        valid = true;
+
+        JSONArray mkskipped = jsonObject.getJSONArray("MKSKIPPED");
+        for(int i=0;i<mkskipped.length();++i) {
+            JSONObject pair = mkskipped.getJSONObject(i);
+            byte[] pubkey = Base64.decode(pair.getString(StatesMKSKIPPED.PUBLIC_KEY), Base64.NO_WRAP);
+            this.MKSKIPPED.put(new Pair<>(SecurityECDH.buildPublicKey(pubkey),
+                            pair.getInt(StatesMKSKIPPED.N)),
+                    Base64.decode(pair.getString(StatesMKSKIPPED.MK), Base64.NO_WRAP));
+        }
+//        valid = true;
+    }
+    public static PublicKey getADForHeaders(States states, Headers headers) {
+        for(Map.Entry<Pair<PublicKey, Integer>, byte[]> entry : states.MKSKIPPED.entrySet()) {
+            if(entry.getKey().second == (headers.PN + headers.N))
+                return entry.getKey().first;
+        }
+
+        return null;
     }
 
     public States() {
@@ -76,6 +98,7 @@ public class States {
         gsonBuilder.registerTypeAdapter(KeyPair.class, new StatesKeyPairSerializer());
         gsonBuilder.registerTypeAdapter(PublicKey.class, new StatesPublicKeySerializer());
         gsonBuilder.registerTypeAdapter(byte[].class, new StatesBytesSerializer());
+        gsonBuilder.registerTypeAdapter(Map.class, new StatesMKSKIPPED());
         gsonBuilder.setPrettyPrinting().serializeNulls();
 
         Gson gson = gsonBuilder.create();
@@ -86,30 +109,18 @@ public class States {
     public boolean equals(@Nullable Object obj) {
         if(obj instanceof States) {
             States state = (States) obj;
-            return (
-                    (state.DHr != null && this.DHr != null &&
-                            Arrays.equals(state.DHr.getEncoded(), this.DHr.getEncoded()))
-                    || Objects.equals(state.DHr, this.DHr)) &&
-                    state.MKSKIPPED.equals(this.MKSKIPPED) &&
-                    Bytes.equal(state.RK, this.RK) &&
-                    Bytes.equal(state.CKr, this.CKr) &&
-                    Bytes.equal(state.CKs, this.CKs) &&
-                    state.Ns == this.Ns &&
-                    state.Nr == this.Nr &&
-                    state.PN == this.PN;
+//            return Objects.equals(state.DHs, this.DHs) &&
+//                    Objects.equals(state.DHr, this.DHr) &&
+//                    state.MKSKIPPED.equals(this.MKSKIPPED) &&
+//                    Bytes.equal(state.RK, this.RK) &&
+//                    Bytes.equal(state.CKr, this.CKr) &&
+//                    Bytes.equal(state.CKs, this.CKs) &&
+//                    state.Ns == this.Ns &&
+//                    state.Nr == this.Nr &&
+//                    state.PN == this.PN;
+            return state.getSerializedStates().equals(this.getSerializedStates());
         }
         return false;
-    }
-
-    public String log(String name) {
-        return name + " - DHs: " + Base64.encodeToString(DHs.getPublic().getEncoded(), Base64.NO_WRAP) + "\n" +
-                name + " - DHr: " + Base64.encodeToString(DHr.getEncoded(), Base64.NO_WRAP) + "\n" +
-                name + " - RK: " + Base64.encodeToString(RK, Base64.NO_WRAP) + "\n" +
-                name + " - CKs: " + Base64.encodeToString(CKs, Base64.NO_WRAP) + "\n" +
-                name + " - CKr: " + Base64.encodeToString(CKr, Base64.NO_WRAP) + "\n" +
-                name + " - Ns: " + Ns + "\n" +
-                name + " - Nr: " + Nr + "\n" +
-                name + " - PN: " + PN;
     }
 
     public static class StatesKeyPairSerializer implements JsonSerializer<KeyPair> {
@@ -131,6 +142,30 @@ public class States {
         @Override
         public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
             return new JsonPrimitive( Base64.encodeToString(src, Base64.NO_WRAP));
+        }
+    }
+
+
+    public static class StatesMKSKIPPED implements JsonSerializer<Map<Pair<PublicKey, Integer>, byte[]>> {
+        public final static String PUBLIC_KEY = "PUBLIC_KEY";
+        public final static String N = "N";
+        public final static String MK = "MK";
+
+        @Override
+        public JsonElement serialize(Map<Pair<PublicKey, Integer>, byte[]> src, Type typeOfSrc, JsonSerializationContext context) {
+            JsonArray jsonArray = new JsonArray();
+            for(Map.Entry<Pair<PublicKey, Integer>, byte[]> entry: src.entrySet()) {
+                String publicKey = Base64.encodeToString(entry.getKey().first.getEncoded(), Base64.NO_WRAP);
+                Integer n = entry.getKey().second;
+
+                JsonObject jsonObject1 = new JsonObject();
+                jsonObject1.addProperty(PUBLIC_KEY, publicKey);
+                jsonObject1.addProperty(N, n);
+                jsonObject1.addProperty(MK, Base64.encodeToString(entry.getValue(), Base64.NO_WRAP));
+
+                jsonArray.add(jsonObject1);
+            }
+            return jsonArray;
         }
     }
 
