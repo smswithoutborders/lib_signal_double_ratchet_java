@@ -62,15 +62,15 @@ public class CryptoHelpers {
         byte[] reconstructedMac =
                 buildVerificationHash(authenticationKey, AD, extractedCipherText)
                         .doFinal();
-        Log.d(CryptoHelpers.class.getName(), "Building recon AUTHKEY:" +
-                Base64.encodeToString(authenticationKey, Base64.NO_WRAP) + ":" +
-                Base64.encodeToString(authenticationKey, Base64.NO_WRAP).length());
-        Log.d(CryptoHelpers.class.getName(), "Building recon AD:" +
-                Base64.encodeToString(AD, Base64.NO_WRAP) + ":" +
-                Base64.encodeToString(AD, Base64.NO_WRAP).length());
-        Log.d(CryptoHelpers.class.getName(), "Building recon cipher:" +
-                Base64.encodeToString(extractedCipherText, Base64.NO_WRAP) + ":" +
-                Base64.encodeToString(extractedCipherText, Base64.NO_WRAP).length());
+//        Log.d(CryptoHelpers.class.getName(), "Building recon AUTHKEY:" +
+//                Base64.encodeToString(authenticationKey, Base64.NO_WRAP) + ":" +
+//                Base64.encodeToString(authenticationKey, Base64.NO_WRAP).length());
+//        Log.d(CryptoHelpers.class.getName(), "Building recon AD:" +
+//                Base64.encodeToString(AD, Base64.NO_WRAP) + ":" +
+//                Base64.encodeToString(AD, Base64.NO_WRAP).length());
+//        Log.d(CryptoHelpers.class.getName(), "Building recon cipher:" +
+//                Base64.encodeToString(extractedCipherText, Base64.NO_WRAP) + ":" +
+//                Base64.encodeToString(extractedCipherText, Base64.NO_WRAP).length());
 //        Log.d(CryptoHelpers.class.getName(), "veri authkey: " +
 //                Base64.encodeToString(authenticationKey, Base64.NO_WRAP) + ":" +
 //                Base64.encodeToString(authenticationKey, Base64.NO_WRAP).length());

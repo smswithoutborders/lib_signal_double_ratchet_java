@@ -79,17 +79,16 @@ public class Protocols {
 
         byte[] cipherText = SecurityAES.encryptAES256CBC(plainText, key, iv);
         byte[] mac = buildVerificationHash(authenticationKey, associated_data, cipherText).doFinal();
-        byte[] composedCipherText = Bytes.concat(cipherText, mac) ;
-        Log.d(CryptoHelpers.class.getName(), "Building encry AUTHKEY:" +
-                Base64.encodeToString(authenticationKey, Base64.NO_WRAP) + ":" +
-                Base64.encodeToString(authenticationKey, Base64.NO_WRAP).length());
-        Log.d(CryptoHelpers.class.getName(), "Building encry AD:" +
-                Base64.encodeToString(associated_data, Base64.NO_WRAP) + ":" +
-                Base64.encodeToString(associated_data, Base64.NO_WRAP).length());
-        Log.d(CryptoHelpers.class.getName(), "Building encry cipher:" +
-                Base64.encodeToString(composedCipherText, Base64.NO_WRAP) + ":" +
-                Base64.encodeToString(composedCipherText, Base64.NO_WRAP).length());
-        return composedCipherText;
+        //        Log.d(CryptoHelpers.class.getName(), "Building encry AUTHKEY:" +
+//                Base64.encodeToString(authenticationKey, Base64.NO_WRAP) + ":" +
+//                Base64.encodeToString(authenticationKey, Base64.NO_WRAP).length());
+//        Log.d(CryptoHelpers.class.getName(), "Building encry AD:" +
+//                Base64.encodeToString(associated_data, Base64.NO_WRAP) + ":" +
+//                Base64.encodeToString(associated_data, Base64.NO_WRAP).length());
+//        Log.d(CryptoHelpers.class.getName(), "Building encry cipher:" +
+//                Base64.encodeToString(composedCipherText, Base64.NO_WRAP) + ":" +
+//                Base64.encodeToString(composedCipherText, Base64.NO_WRAP).length());
+        return Bytes.concat(cipherText, mac);
     }
 
     public static byte[] DECRYPT(byte[] mk, byte[] cipherText, byte[] associated_data) throws Throwable {

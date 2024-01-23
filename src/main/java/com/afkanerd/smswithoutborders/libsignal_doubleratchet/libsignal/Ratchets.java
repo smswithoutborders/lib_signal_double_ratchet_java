@@ -43,7 +43,7 @@ public class Ratchets {
         return state;
     }
 
-    public static Pair<Headers, byte[]> ratchetEncrypt(States state, byte[] plainText, byte[] AD) throws Throwable {
+    public static Pair<Headers, byte[][]> ratchetEncrypt(States state, byte[] plainText, byte[] AD) throws Throwable {
         Pair<byte[], byte[]> kdfCkOutput = Protocols.KDF_CK(state.CKs);
         state.CKs = kdfCkOutput.first;
         byte[] mk = kdfCkOutput.second;
@@ -51,7 +51,15 @@ public class Ratchets {
         state.Ns += 1;
 
         byte[] cipherText = Protocols.ENCRYPT(mk, plainText, Protocols.CONCAT(AD, header));
-        return new Pair<>(header, cipherText);
+//        Log.d(Ratchets.class.getName(), "Encrypt header: " +
+//                Base64.encodeToString(header.getSerialized(), Base64.NO_WRAP));
+//        Log.d(Ratchets.class.getName(), "Encrypt mk: " +
+//                Base64.encodeToString(mk, Base64.NO_WRAP));
+//        Log.d(Ratchets.class.getName(), "Encrypt ciphertext: " +
+//                Base64.encodeToString(cipherText, Base64.NO_WRAP));
+//        Log.d(Ratchets.class.getName(), "Encrypt AD: " +
+//                Base64.encodeToString(AD, Base64.NO_WRAP));
+        return new Pair<>(header, new byte[][]{cipherText, mk});
     }
 
     /**
@@ -66,24 +74,34 @@ public class Ratchets {
      * @throws Throwable
      */
     public static Pair<byte[], byte[]> ratchetDecrypt(String keystoreAlias, States state, Headers header,
-                                 byte[] cipherText, byte[] AD) throws Throwable {
-        byte[] plainText = trySkippedMessageKeys(state, header, cipherText, AD);
-        if(plainText != null)
-            return new Pair<>(plainText, null);
-
+                                 byte[] cipherText, byte[] AD, byte[] mk) throws Throwable {
         byte[] privateKeyCipher = null;
-        if(state.DHr == null ||
-                !Arrays.equals(header.dh.getEncoded(), state.DHr.getEncoded())) {
-            skipMessageKeys(state, header.PN);
-            privateKeyCipher = DHRatchet(keystoreAlias, state, header);
-        }
-        skipMessageKeys(state, header.N);
+        if(mk == null) {
+            byte[] plainText = trySkippedMessageKeys(state, header, cipherText, AD);
+            if(plainText != null)
+                return new Pair<>(plainText, null);
+
+            if(state.DHr == null ||
+                    !Arrays.equals(header.dh.getEncoded(), state.DHr.getEncoded())) {
+                skipMessageKeys(state, header.PN);
+                privateKeyCipher = DHRatchet(keystoreAlias, state, header);
+            }
+            skipMessageKeys(state, header.N);
 //        if(header.N > 0)
 //            Log.d(Ratchets.class.getName(), "Skipped state: " + state.getSerializedStates());
-        Pair<byte[], byte[]> kdfCkOutput = Protocols.KDF_CK(state.CKr);
-        state.CKr = kdfCkOutput.first;
-        byte[] mk = kdfCkOutput.second;
-        state.Nr += 1;
+            Pair<byte[], byte[]> kdfCkOutput = Protocols.KDF_CK(state.CKr);
+            state.CKr = kdfCkOutput.first;
+            mk = kdfCkOutput.second;
+            state.Nr += 1;
+        }
+//        Log.d(Ratchets.class.getName(), "Decrypt header: " +
+//                Base64.encodeToString(header.getSerialized(), Base64.NO_WRAP));
+//        Log.d(Ratchets.class.getName(), "Decrypt mk: " +
+//                Base64.encodeToString(mk, Base64.NO_WRAP));
+//        Log.d(Ratchets.class.getName(), "Decrypt ciphertext: " +
+//                Base64.encodeToString(cipherText, Base64.NO_WRAP));
+//        Log.d(Ratchets.class.getName(), "Decrypt AD: " +
+//                Base64.encodeToString(AD, Base64.NO_WRAP));
         return new Pair<>(Protocols.DECRYPT(mk, cipherText, Protocols.CONCAT(AD, header)),
                 privateKeyCipher);
     }
@@ -126,7 +144,6 @@ public class Ratchets {
 
         if(state.CKr != null) {
             while(state.Nr < until) {
-                Log.d(Ratchets.class.getName(), "Yes skipped messages found! " + until);
                 Pair<byte[], byte[]> kdfCkOutput = Protocols.KDF_CK(state.CKr);
                 state.CKr = kdfCkOutput.first;
                 byte[] mk = kdfCkOutput.second;
