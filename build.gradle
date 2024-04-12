@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'maven-publish'
+    id 'digital.wup.android-maven-publish' version '3.6.2'
 }
 
 def versionsPropertiesFile = rootProject.file("version.properties")
@@ -53,6 +54,11 @@ android {
 
 }
 
+task sourceJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier "source"
+}
+
 publishing {
     publications {
         def _versionName = versionProperties['versionName']
@@ -61,6 +67,7 @@ publishing {
             groupId = 'com.afkanerd.smswithoutborders'
             artifactId = 'libsignal_doubleratchet'
             version = _versionName
+            from components.android
 
             afterEvaluate {
                 from components.release
@@ -68,7 +75,7 @@ publishing {
         }
     }
     repositories {
-        maven {
+        mavenAar {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/smswithoutborders/lib_signal_double_ratchet_java")
             credentials {
