@@ -56,38 +56,36 @@ android {
 
 task sourceJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
-    classifier "source"
+    classifier "sources"
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            def _versionName = versionProperties['versionName']
-            def tagVersion = Integer.parseInt(versionProperties['tagVersion'])
-            release(MavenPublication) {
-                groupId = 'com.afkanerd.smswithoutborders'
-                artifactId = 'libsignal_doubleratchet'
-                version = _versionName
-                from components.android
+publishing {
+    publications {
+        def _versionName = versionProperties['versionName']
+        def tagVersion = Integer.parseInt(versionProperties['tagVersion'])
+        release(MavenPublication) {
+            groupId = 'com.afkanerd.smswithoutborders'
+            artifactId = 'libsignal_doubleratchet'
+            version = _versionName
+            from components.android
 
-                afterEvaluate {
-                    from components.release
-                }
-            }
-        }
-        repositories {
-            mavenAar {
-                name = "GitHubPackages"
-                url = uri("https://maven.pkg.github.com/smswithoutborders/lib_signal_double_ratchet_java")
-                credentials {
-                    username = releaseProperties['github_username']
-                    password = releaseProperties['github_token']
-                }
+            afterEvaluate {
+                from components.release
             }
         }
     }
-
+    repositories {
+        mavenAar {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/smswithoutborders/lib_signal_double_ratchet_java")
+            credentials {
+                username = releaseProperties['github_username']
+                password = releaseProperties['github_token']
+            }
+        }
+    }
 }
+
 dependencies {
 
     implementation 'androidx.appcompat:appcompat:1.6.1'
