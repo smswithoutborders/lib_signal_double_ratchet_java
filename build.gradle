@@ -67,7 +67,6 @@ publishing {
             groupId = 'com.afkanerd.smswithoutborders'
             artifactId = 'libsignal_doubleratchet'
             version = _versionName
-            from components.android
 
             afterEvaluate {
                 from components.release
