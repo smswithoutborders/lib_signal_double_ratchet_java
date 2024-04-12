@@ -63,7 +63,7 @@ publishing {
     publications {
         def _versionName = versionProperties['versionName']
         def tagVersion = Integer.parseInt(versionProperties['tagVersion'])
-        release(MavenPublication) {
+        marvenAar(MavenPublication) {
             groupId = 'com.afkanerd.smswithoutborders'
             artifactId = 'libsignal_doubleratchet'
             version = _versionName
