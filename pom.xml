@@ -2,15 +2,13 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <dependencies>
-    <!-- Android SDK dependency -->
-    <dependency>
-      <groupId>com.google.android</groupId>
-      <artifactId>android</artifactId>
-      <version>24.0.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <!-- Other dependencies -->
-  </dependencies>
+  <dependency>
+   <groupId>com.google.android</groupId>
+   <artifactId>android</artifactId>
+   <version>2.2.1</version>
+   <scope>provided</scope>
+  </dependency>
+ </dependencies>
   <properties>
     <maven.compiler.source>1.7</maven.compiler.source>
     <maven.compiler.target>1.7</maven.compiler.target>
