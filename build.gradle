@@ -1,7 +1,6 @@
 plugins {
     id 'com.android.library'
     id 'maven-publish'
-    id 'digital.wup.android-maven-publish' version '3.6.2'
 }
 
 def versionsPropertiesFile = rootProject.file("version.properties")
