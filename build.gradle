@@ -65,11 +65,10 @@ publishing {
         mavenJava(MavenPublication) {
             groupId = 'com.afkanerd.smswithoutborders'
             artifactId = 'libsignal_doubleratchet'
-            version = "0.0.1"
-            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
+            version = "0.0.2"
+//            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
             // Optionally, define the sources artifact to be published
-            artifact(sourceJar)
-//
+//            artifact(sourceJar)
             afterEvaluate {
                 from components.release
             }
@@ -108,23 +107,40 @@ publishing {
     }
     repositories {
         maven {
-            name = "Sonatype"
-            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/smswithoutborders/lib_signal_double_ratchet_java")
             credentials {
-                username = releaseProperties["ossrhUsername"]
-                password = releaseProperties["ossrhPassword"]
-            }
-        }
-        maven {
-            name = "Sonatype-Snapshots"
-            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-            credentials {
-                username = releaseProperties["ossrhUsername"]
-                password = releaseProperties["ossrhPassword"]
+                username = releaseProperties['github_username']
+                password = releaseProperties['github_token']
             }
         }
     }
+//    repositories {
+//        maven {
+//            name = "Sonatype"
+//            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+//
+//            credentials {
+//                username = releaseProperties["ossrhUsername"]
+//                password = releaseProperties["ossrhPassword"]
+//            }
+//        }
+//        maven {
+//            name = "Sonatype-Snapshots"
+//            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+//            credentials {
+//                username = releaseProperties["ossrhUsername"]
+//                password = releaseProperties["ossrhPassword"]
+//            }
+//        }
+//    }
+}
+
+task bundleForSonatype(type: Zip) {
+    from "$buildDir/outputs/aar/${project.getName()}-release.aar"
+    from "$buildDir/publications/mavenJava/pom-default.xml"
+    into("$buildDir/bundle")
+    archiveFileName = "${project.getName()}-bundle.zip"
 }
 
 def localProperties = new Properties()
