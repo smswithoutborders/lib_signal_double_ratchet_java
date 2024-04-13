@@ -1,23 +1,29 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <dependencies>
-  <dependency>
-   <groupId>com.google.android</groupId>
-   <artifactId>android</artifactId>
-   <version>2.2.1</version>
-   <scope>provided</scope>
-  </dependency>
- </dependencies>
-  <properties>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
-    <!-- Following project.-properties are reserved for Maven in will become elements in a future POM definition. -->
-    <!-- Don't start your own properties properties with project. -->
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding> 
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-  </properties>
   <groupId>com.afkanerd.smswithoutborders</groupId>
   <artifactId>libsignal_doubleratchet</artifactId>
-  <version>0.33.0</version>
+  <version>0.0.2</version>
+  <packaging>aar</packaging>
+  <name>SMSWithoutBorders LibSignal Double Ratchet</name>
+  <description>An implementation of the Double Ratchet Algorithm as provided by Signal protocol</description>
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>sherlock</id>
+      <name>Sherlock Wisdom</name>
+      <email>wisdom@smswithoutborders.com</email>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/smswithoutborders/lib_signal_double_ratchet_java.git</connection>
+    <developerConnection>scm:git:https://github.com/smswithoutborders/lib_signal_double_ratchet_java.git</developerConnection>
+    <url>https://github.com/smswithoutborders/lib_signal_double_ratchet_java</url>
+  </scm>
 </project>
