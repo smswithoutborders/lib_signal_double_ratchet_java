@@ -33,12 +33,6 @@
   </scm>
   <dependencies>
     <dependency>
-      <groupId>com.afkanerd.smswithoutborders</groupId>
-      <artifactId>libsignal_doubleratchet</artifactId>
-      <version>0.0.2</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
       <groupId>androidx.appcompat</groupId>
       <artifactId>appcompat</artifactId>
       <version>1.6.1</version>
