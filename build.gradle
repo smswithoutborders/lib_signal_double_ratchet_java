@@ -1,7 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'maven-publish'
-    id 'digital.wup.android-maven-publish' version '3.6.2'
+    id 'signing'
 }
 
 def versionsPropertiesFile = rootProject.file("version.properties")
@@ -48,6 +48,7 @@ android {
 
     publishing {
         singleVariant('release') {
+            withJavadocJar()
             withSourcesJar()
         }
     }
@@ -56,37 +57,93 @@ android {
 
 task sourceJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
-    classifier "sources"
+    archiveClassifier.set('sources')
 }
 
 publishing {
     publications {
-        def _versionName = versionProperties['versionName']
-        def tagVersion = Integer.parseInt(versionProperties['tagVersion'])
-        release(MavenPublication) {
+        mavenJava(MavenPublication) {
             groupId = 'com.afkanerd.smswithoutborders'
             artifactId = 'libsignal_doubleratchet'
-            version = _versionName
-
+            version = "0.0.1"
+            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
+            // Optionally, define the sources artifact to be published
+            artifact(sourceJar)
+//
             afterEvaluate {
                 from components.release
             }
+
+            pom {
+                name = 'SMSWithoutBorders LibSignal Double Ratchet'
+                packaging = 'aar'
+                // optionally artifactId can be defined here
+                description = 'An implementation of the Double Ratchet Algorithm as provided by Signal protocol'
+                //                url 'http://www.example.com/example-application'
+
+                scm {
+                    connection = 'scm:git:https://github.com/smswithoutborders/lib_signal_double_ratchet_java.git'
+                    developerConnection = 'scm:git:https://github.com/smswithoutborders/lib_signal_double_ratchet_java.git'
+                    url = 'https://github.com/smswithoutborders/lib_signal_double_ratchet_java'
+                }
+
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'sherlock'
+                        name = 'Sherlock Wisdom'
+                        email = 'wisdom@smswithoutborders.com'
+                    }
+                }
+            }
+
         }
+
     }
     repositories {
-        mavenAar {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/smswithoutborders/lib_signal_double_ratchet_java")
+        maven {
+            name = "Sonatype"
+            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+
             credentials {
-                username = releaseProperties['github_username']
-                password = releaseProperties['github_token']
+                username = releaseProperties["ossrhUsername"]
+                password = releaseProperties["ossrhPassword"]
+            }
+        }
+        maven {
+            name = "Sonatype-Snapshots"
+            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            credentials {
+                username = releaseProperties["ossrhUsername"]
+                password = releaseProperties["ossrhPassword"]
             }
         }
     }
 }
 
-dependencies {
+def localProperties = new Properties()
+localProperties.load(new FileInputStream(rootProject.file("local.properties")))
+signing {
+//    def signingKeyId = localProperties.getProperty("signingKeyId")
+//    def signingPassword = localProperties.getProperty("signingPassword")
+//    def signingKey = localProperties.getProperty("signingSecretKeyRingFile")
+//
+//    useInMemoryPgpKeys( signingKeyId, signingKey, signingPassword)
+//
+//    sign(publishing.publications["release"])
 
+    sign publishing.publications.mavenJava
+}
+
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'com.google.guava:guava:33.0.0-jre'
