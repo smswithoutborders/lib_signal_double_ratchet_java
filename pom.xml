@@ -10,7 +10,6 @@
   <groupId>com.afkanerd.smswithoutborders</groupId>
   <artifactId>libsignal_doubleratchet</artifactId>
   <version>0.0.2</version>
-  <packaging>aar</packaging>
   <name>SMSWithoutBorders LibSignal Double Ratchet</name>
   <description>An implementation of the Double Ratchet Algorithm as provided by Signal protocol</description>
   <licenses>
