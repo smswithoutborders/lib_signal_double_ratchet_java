@@ -39,6 +39,8 @@ public class SecurityRSA {
                 keystoreAlias,
                 KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
                 .setKeySize(keySize)
+                .setDigests(KeyProperties.DIGEST_SHA1, KeyProperties.DIGEST_SHA256,
+                        KeyProperties.DIGEST_SHA512)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_OAEP)
                 .build());
         return kpg.generateKeyPair().getPublic();

@@ -65,7 +65,7 @@ publishing {
         mavenJava(MavenPublication) {
             groupId = 'com.afkanerd.smswithoutborders'
             artifactId = 'libsignal_doubleratchet'
-            version = "0.0.2"
+            version = "0.0.3"
 //            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
             // Optionally, define the sources artifact to be published
 //            artifact(sourceJar)
