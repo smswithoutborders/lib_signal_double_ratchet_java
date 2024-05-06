@@ -143,20 +143,20 @@ task bundleForSonatype(type: Zip) {
     archiveFileName = "${project.getName()}-bundle.zip"
 }
 
-def localProperties = new Properties()
-localProperties.load(new FileInputStream(rootProject.file("local.properties")))
-signing {
-//    def signingKeyId = localProperties.getProperty("signingKeyId")
-//    def signingPassword = localProperties.getProperty("signingPassword")
-//    def signingKey = localProperties.getProperty("signingSecretKeyRingFile")
+//def localProperties = new Properties()
+//localProperties.load(new FileInputStream(rootProject.file("local.properties")))
+//signing {
+////    def signingKeyId = localProperties.getProperty("signingKeyId")
+////    def signingPassword = localProperties.getProperty("signingPassword")
+////    def signingKey = localProperties.getProperty("signingSecretKeyRingFile")
+////
+////    useInMemoryPgpKeys( signingKeyId, signingKey, signingPassword)
+////
+////    sign(publishing.publications["release"])
 //
-//    useInMemoryPgpKeys( signingKeyId, signingKey, signingPassword)
+//    sign publishing.publications.mavenJava
+//}
 //
-//    sign(publishing.publications["release"])
-
-    sign publishing.publications.mavenJava
-}
-
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
