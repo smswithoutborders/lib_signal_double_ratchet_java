@@ -1,7 +1,6 @@
 plugins {
     id 'com.android.library'
-    id 'maven-publish'
-    id 'signing'
+    id "com.vanniktech.maven.publish" version "0.28.0"
 }
 
 def versionsPropertiesFile = rootProject.file("version.properties")
@@ -20,8 +19,6 @@ android {
     defaultConfig {
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aarMetadata {
@@ -46,122 +43,42 @@ android {
         enable = true
     }
 
-    publishing {
-        singleVariant('release') {
-            withJavadocJar()
-            withSourcesJar()
-        }
-    }
+//    publishing {
+//        singleVariant('release') {
+//            withJavadocJar()
+//            withSourcesJar()
+//        }
+//    }
 
 }
 
-task sourceJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
-    archiveClassifier.set('sources')
-}
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            groupId = 'com.afkanerd.smswithoutborders'
-            artifactId = 'libsignal_doubleratchet'
-            version = "0.0.3"
-//            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
-            // Optionally, define the sources artifact to be published
-//            artifact(sourceJar)
-            afterEvaluate {
-                from components.release
-            }
-
-            pom {
-                name = 'SMSWithoutBorders LibSignal Double Ratchet'
-                packaging = 'aar'
-                // optionally artifactId can be defined here
-                description = 'An implementation of the Double Ratchet Algorithm as provided by Signal protocol'
-                //                url 'http://www.example.com/example-application'
-
-                scm {
-                    connection = 'scm:git:https://github.com/smswithoutborders/lib_signal_double_ratchet_java.git'
-                    developerConnection = 'scm:git:https://github.com/smswithoutborders/lib_signal_double_ratchet_java.git'
-                    url = 'https://github.com/smswithoutborders/lib_signal_double_ratchet_java'
-                }
-
-                licenses {
-                    license {
-                        name = 'MIT License'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = 'sherlock'
-                        name = 'Sherlock Wisdom'
-                        email = 'wisdom@smswithoutborders.com'
-                    }
-                }
-            }
-
-        }
-
     }
     repositories {
         maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/smswithoutborders/lib_signal_double_ratchet_java")
+            name = "Sonatype-Snapshots"
+//            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2")
             credentials {
-                username = releaseProperties['github_username']
-                password = releaseProperties['github_token']
+                username = releaseProperties["ossrhUsername"]
+                password = releaseProperties["ossrhPassword"]
             }
         }
     }
-//    repositories {
-//        maven {
-//            name = "Sonatype"
-//            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-//
-//            credentials {
-//                username = releaseProperties["ossrhUsername"]
-//                password = releaseProperties["ossrhPassword"]
-//            }
-//        }
-//        maven {
-//            name = "Sonatype-Snapshots"
-//            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-//            credentials {
-//                username = releaseProperties["ossrhUsername"]
-//                password = releaseProperties["ossrhPassword"]
-//            }
-//        }
-//    }
 }
 
-task bundleForSonatype(type: Zip) {
-    from "$buildDir/outputs/aar/${project.getName()}-release.aar"
-    from "$buildDir/publications/mavenJava/pom-default.xml"
-    into("$buildDir/bundle")
-    archiveFileName = "${project.getName()}-bundle.zip"
-}
 
-//def localProperties = new Properties()
-//localProperties.load(new FileInputStream(rootProject.file("local.properties")))
-//signing {
-////    def signingKeyId = localProperties.getProperty("signingKeyId")
-////    def signingPassword = localProperties.getProperty("signingPassword")
-////    def signingKey = localProperties.getProperty("signingSecretKeyRingFile")
-////
-////    useInMemoryPgpKeys( signingKeyId, signingKey, signingPassword)
-////
-////    sign(publishing.publications["release"])
-//
-//    sign publishing.publications.mavenJava
+
+//task sourceJar(type: Jar) {
+//    from android.sourceSets.main.java.srcDirs
+//    archiveClassifier.set('sources')
 //}
-//
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'androidx.appcompat:appcompat:1.7.0'
-//    implementation 'com.google.android.material:material:1.11.0'
     implementation 'com.google.guava:guava:33.0.0-jre'
     implementation 'com.google.crypto.tink:tink:1.12.0'
     implementation 'com.madgag.spongycastle:prov:1.58.0.0'

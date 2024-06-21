@@ -1,4 +1,4 @@
-package com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal
+package com.afkanerd.smswithoutborders.libsignal_doubleratchet
 
 import org.whispersystems.curve25519.Curve25519
 import org.whispersystems.curve25519.Curve25519KeyPair
