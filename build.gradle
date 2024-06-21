@@ -54,13 +54,17 @@ android {
 
 }
 
+task sourceJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    archiveClassifier.set('sources')
+}
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
             groupId = 'com.afkanerd.smswithoutborders'
             artifactId = 'libsignal_doubleratchet'
-            version = "0.0.5"
+            version = "0.0.6"
 //            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
             // Optionally, define the sources artifact to be published
 //            artifact(sourceJar)
@@ -99,7 +103,7 @@ publishing {
 //}
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar', "*.aar"])
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.guava:guava:33.0.0-jre'
     implementation 'com.google.crypto.tink:tink:1.12.0'
