@@ -1,6 +1,8 @@
 plugins {
     id 'com.android.library'
-    id "com.vanniktech.maven.publish" version "0.28.0"
+    id 'maven-publish'
+    id 'signing'
+//    id "com.vanniktech.maven.publish" version "0.28.0"
 }
 
 def versionsPropertiesFile = rootProject.file("version.properties")
@@ -43,20 +45,40 @@ android {
         enable = true
     }
 
-//    publishing {
-//        singleVariant('release') {
-//            withJavadocJar()
-//            withSourcesJar()
-//        }
-//    }
+    publishing {
+        singleVariant('release') {
+            withJavadocJar()
+            withSourcesJar()
+        }
+    }
 
 }
 
 
 publishing {
     publications {
+        mavenJava(MavenPublication) {
+            groupId = 'com.afkanerd.smswithoutborders'
+            artifactId = 'libsignal_doubleratchet'
+            version = "0.0.5"
+//            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
+            // Optionally, define the sources artifact to be published
+//            artifact(sourceJar)
+            afterEvaluate {
+                from components.release
+            }
+
+        }
     }
     repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/smswithoutborders/lib_signal_double_ratchet_java")
+            credentials {
+                username = releaseProperties['github_username']
+                password = releaseProperties['github_token']
+            }
+        }
         maven {
             name = "Sonatype-Snapshots"
 //            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
