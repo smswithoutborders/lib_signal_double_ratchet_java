@@ -1,18 +1,10 @@
 plugins {
     id 'com.android.library'
-    id 'maven-publish'
+//    id 'maven-publish'
     id 'signing'
-//    id "com.vanniktech.maven.publish" version "0.28.0"
+    id 'org.jetbrains.kotlin.android'
+    id "com.vanniktech.maven.publish" version "0.29.0"
 }
-
-def versionsPropertiesFile = rootProject.file("version.properties")
-def releasePropertiesFile= rootProject.file("release.properties")
-
-def versionProperties = new Properties()
-versionProperties.load(new FileInputStream(versionsPropertiesFile))
-
-def releaseProperties = new Properties()
-releaseProperties.load(new FileInputStream(releasePropertiesFile))
 
 android {
     namespace 'com.afkanerd.smswithoutborders.libsignal_doubleratchet'
@@ -37,70 +29,18 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     testFixtures {
         enable = true
     }
 
-    publishing {
-        singleVariant('release') {
-            withJavadocJar()
-            withSourcesJar()
-        }
-    }
-
-}
-
-task sourceJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
-    archiveClassifier.set('sources')
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId = 'com.afkanerd.smswithoutborders'
-            artifactId = 'libsignal_doubleratchet'
-            version = "0.0.6"
-//            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
-            // Optionally, define the sources artifact to be published
-//            artifact(sourceJar)
-            afterEvaluate {
-                from components.release
-            }
-
-        }
-    }
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/smswithoutborders/lib_signal_double_ratchet_java")
-            credentials {
-                username = releaseProperties['github_username']
-                password = releaseProperties['github_token']
-            }
-        }
-        maven {
-            name = "Sonatype-Snapshots"
-//            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-            url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2")
-            credentials {
-                username = releaseProperties["ossrhUsername"]
-                password = releaseProperties["ossrhPassword"]
-            }
-        }
+    kotlinOptions {
+        jvmTarget = '17'
     }
 }
-
-
-
-//task sourceJar(type: Jar) {
-//    from android.sourceSets.main.java.srcDirs
-//    archiveClassifier.set('sources')
-//}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar', "*.aar"])
@@ -109,6 +49,7 @@ dependencies {
     implementation 'com.google.crypto.tink:tink:1.12.0'
     implementation 'com.madgag.spongycastle:prov:1.58.0.0'
     implementation 'org.conscrypt:conscrypt-android:2.2.1'
+    implementation 'androidx.core:core-ktx:1.13.1'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
