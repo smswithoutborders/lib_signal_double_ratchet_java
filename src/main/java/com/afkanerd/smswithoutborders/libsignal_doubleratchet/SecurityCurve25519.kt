@@ -1,17 +1,15 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet
 
-import org.whispersystems.curve25519.Curve25519
-import org.whispersystems.curve25519.Curve25519KeyPair
-
+import com.github.netricecake.ecdh.Curve25519
 
 class SecurityCurve25519 {
-    private val cipher: Curve25519 = Curve25519.getInstance(Curve25519.BEST)
+   val privateKey: ByteArray = Curve25519.generateRandomKey()
 
-    fun generateKey(): Curve25519KeyPair {
-        return cipher.generateKeyPair()
+    fun generateKey(): ByteArray {
+        return Curve25519.publicKey(this.privateKey)
     }
 
-    fun calculateSharedSecret(keyPair: Curve25519KeyPair): ByteArray {
-        return cipher.calculateAgreement(keyPair.publicKey, keyPair.privateKey)
+    fun calculateSharedSecret(publicKey: ByteArray): ByteArray {
+        return Curve25519.sharedSecret(this.privateKey, publicKey)
     }
 }
