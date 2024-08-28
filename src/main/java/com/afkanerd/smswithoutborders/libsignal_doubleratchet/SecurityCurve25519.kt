@@ -10,6 +10,8 @@ class SecurityCurve25519 {
     }
 
     fun calculateSharedSecret(publicKey: ByteArray): ByteArray {
-        return Curve25519.sharedSecret(this.privateKey, publicKey)
+        val sharedKey = Curve25519.sharedSecret(this.privateKey, publicKey)
+        return CryptoHelpers.HKDF("HMACSHA256", sharedKey, null,
+            "x25591_key_exchange".encodeToByteArray(), 32, 1)[0]
     }
 }
