@@ -25,6 +25,7 @@ import java.util.List;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 
 public class KeystoreHelpers {
 
@@ -78,5 +79,12 @@ public class KeystoreHelpers {
             return new KeyPair(publicKey, privateKey);
         }
         return null;
+    }
+
+    public static SecretKey getSecretKeyFromKeystore(String keystoreAlias) throws KeyStoreException, CertificateException, IOException, NoSuchAlgorithmException, UnrecoverableEntryException {
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+
+        return ((KeyStore.SecretKeyEntry) keyStore.getEntry(keystoreAlias, null)).getSecretKey();
     }
 }

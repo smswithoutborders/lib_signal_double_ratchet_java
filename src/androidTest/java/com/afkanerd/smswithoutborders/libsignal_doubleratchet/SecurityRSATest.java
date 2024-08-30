@@ -4,9 +4,6 @@ package com.afkanerd.smswithoutborders.libsignal_doubleratchet;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import android.security.keystore.KeyGenParameterSpec;
-import android.security.keystore.KeyProperties;
-
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Test;
@@ -16,7 +13,6 @@ import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -50,7 +46,7 @@ public class SecurityRSATest {
         PublicKey publicKey = SecurityRSA.generateKeyPair(keystoreAlias, 2048);
         KeyPair keyPair = KeystoreHelpers.getKeyPairFromKeystore(keystoreAlias);
 
-        SecretKey secretKey = SecurityAES.generateSecretKey(128);
+        SecretKey secretKey = SecurityAES.generateSecretKey(256);
         byte[] cipherText = SecurityRSA.encrypt(keyPair.getPublic(), secretKey.getEncoded());
         byte[] plainText = SecurityRSA.decrypt(keyPair.getPrivate(), cipherText);
         assertArrayEquals(secretKey.getEncoded(), plainText);

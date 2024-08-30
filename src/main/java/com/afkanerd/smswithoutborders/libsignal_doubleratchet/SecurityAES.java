@@ -1,11 +1,12 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet;
 
+import android.security.keystore.KeyProperties;
+
 import com.google.common.primitives.Bytes;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.MGF1ParameterSpec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -25,7 +26,7 @@ public class SecurityAES {
 
 
     public static SecretKey generateSecretKey(int size) throws NoSuchAlgorithmException {
-        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+        KeyGenerator keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES);
         keyGenerator.init(size); // Adjust key size as needed
         return keyGenerator.generateKey();
     }
