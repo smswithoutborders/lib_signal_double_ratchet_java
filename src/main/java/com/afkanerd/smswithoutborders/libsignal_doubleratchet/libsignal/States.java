@@ -1,5 +1,6 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal;
 
+import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.Nullable;
@@ -24,6 +25,7 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,18 +42,27 @@ public class States {
 
     public Map<Pair<byte[], Integer>, byte[]> MKSKIPPED = new HashMap<>();
 
-    public States(Pair<byte[], byte[]> DHs, String states) throws JSONException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public States(String states) throws JSONException {
         if(states == null)
             return;
 
-        this.DHs = DHs;
-
         JSONObject jsonObject = new JSONObject(states);
-        if(!jsonObject.getString("DHr").equals("null"))
+        if(jsonObject.has("DHs")) {
+            String[] encodedValues = jsonObject.getString("DHs").split(" ");
+            Log.d(getClass().getName(), "Decoded values: " + jsonObject.getString("DHs"));
+            Log.d(getClass().getName(), "Decoded values: " + Arrays.toString(encodedValues));
+            this.DHs = new Pair<>(android.util.Base64.decode(encodedValues[0], Base64.NO_WRAP),
+                    android.util.Base64.decode(encodedValues[1], Base64.NO_WRAP));
+        }
+        if(jsonObject.has("DHr"))
             this.DHr = Base64.decode(jsonObject.getString("DHr"), Base64.NO_WRAP);
-        this.RK = Base64.decode(jsonObject.getString("RK"), Base64.NO_WRAP);
-        this.CKs = Base64.decode(jsonObject.getString("CKs"), Base64.NO_WRAP);
-        this.CKr = Base64.decode(jsonObject.getString("CKr"), Base64.NO_WRAP);
+
+        if(jsonObject.has("RK"))
+            this.RK = Base64.decode(jsonObject.getString("RK"), Base64.NO_WRAP);
+        if(jsonObject.has("CKs"))
+            this.CKs = Base64.decode(jsonObject.get("CKs").toString(), Base64.NO_WRAP);
+        if(jsonObject.has("CKr"))
+            this.CKr = Base64.decode(jsonObject.getString("CKr"), Base64.NO_WRAP);
         this.Ns = jsonObject.getInt("Ns");
         this.Nr = jsonObject.getInt("Nr");
         this.PN = jsonObject.getInt("PN");
@@ -82,8 +93,10 @@ public class States {
         gsonBuilder.registerTypeAdapter(KeyPair.class, new StatesKeyPairSerializer());
         gsonBuilder.registerTypeAdapter(PublicKey.class, new StatesPublicKeySerializer());
         gsonBuilder.registerTypeAdapter(byte[].class, new StatesBytesSerializer());
+        gsonBuilder.registerTypeAdapter(Pair.class, new PairStatesBytesSerializer());
         gsonBuilder.registerTypeAdapter(Map.class, new StatesMKSKIPPED());
-        gsonBuilder.setPrettyPrinting().serializeNulls();
+        gsonBuilder.setPrettyPrinting()
+                .disableHtmlEscaping();
 
         Gson gson = gsonBuilder.create();
         return gson.toJson(this);
@@ -109,6 +122,14 @@ public class States {
         @Override
         public JsonElement serialize(PublicKey src, Type typeOfSrc, JsonSerializationContext context) {
             return new JsonPrimitive(Base64.encodeToString(src.getEncoded(), Base64.NO_WRAP));
+        }
+    }
+
+    public static class PairStatesBytesSerializer implements JsonSerializer<Pair<byte[], byte[]>> {
+        @Override
+        public JsonElement serialize(Pair<byte[], byte[]> src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive( Base64.encodeToString(src.first, Base64.NO_WRAP) + " " +
+                    Base64.encodeToString(src.second, Base64.NO_WRAP));
         }
     }
 
