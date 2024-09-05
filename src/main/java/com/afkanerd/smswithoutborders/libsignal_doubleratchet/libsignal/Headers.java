@@ -1,34 +1,31 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal;
 
-import android.util.Base64;
-import android.util.Log;
+import android.util.Pair;
 
 import androidx.annotation.Nullable;
 
-import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityECDH;
 import com.google.common.primitives.Bytes;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
 public class Headers {
 
-    public PublicKey dh;
+    public byte[] dh;
     public int PN;
     public int N;
 
-    public Headers(KeyPair dhPair, int PN, int N) {
-        this.dh = dhPair.getPublic();
+    /**
+     *
+     * @param dhPair This is a public key
+     * @param PN
+     * @param N
+     */
+    public Headers(Pair<byte[], byte[]> dhPair, int PN, int N) {
+        this.dh = dhPair.second;
         this.PN = PN;
         this.N = N;
     }
@@ -51,7 +48,7 @@ public class Headers {
 
         byte[] pubKey = new byte[len - 12];
         System.arraycopy(serializedHeader, 12, pubKey, 0, pubKey.length);
-        this.dh = SecurityECDH.buildPublicKey(pubKey);
+        this.dh = pubKey;
 
         if(serializedHeader.length > len) {
             byte[] buffer = new byte[serializedHeader.length - len];
@@ -63,9 +60,8 @@ public class Headers {
 
     @Override
     public boolean equals(@Nullable Object obj) {
-        if(obj instanceof Headers) {
-            Headers header = (Headers) obj;
-            return Arrays.equals(header.dh.getEncoded(), this.dh.getEncoded()) &&
+        if(obj instanceof Headers header) {
+            return Arrays.equals(header.dh, this.dh) &&
                     header.PN == this.PN &&
                     header.N == this.N;
         }
@@ -79,7 +75,7 @@ public class Headers {
         byte[] bytesN = new byte[4];
         ByteBuffer.wrap(bytesN).putInt(this.N);
 
-        byte[] pubKey = this.dh.getEncoded();
+        byte[] pubKey = this.dh;
 
         int len = 4 + bytesPN.length + bytesN.length + pubKey.length;
         byte[] bytesLen = new byte[4];

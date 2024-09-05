@@ -2,9 +2,7 @@ package com.afkanerd.smswithoutborders.libsignal_doubleratchet
 
 import com.github.netricecake.ecdh.Curve25519
 
-class SecurityCurve25519 {
-    var privateKey: ByteArray = Curve25519.generateRandomKey()
-
+class SecurityCurve25519(val privateKey: ByteArray = Curve25519.generateRandomKey()) {
     fun generateKey(): ByteArray {
         return Curve25519.publicKey(this.privateKey)
     }
@@ -13,5 +11,9 @@ class SecurityCurve25519 {
         val sharedKey = Curve25519.sharedSecret(this.privateKey, publicKey)
         return CryptoHelpers.HKDF("HMACSHA256", sharedKey, null,
             "x25591_key_exchange".encodeToByteArray(), 32, 1)[0]
+    }
+
+    fun getKeypair(): android.util.Pair<ByteArray, ByteArray> {
+        return android.util.Pair(privateKey, generateKey())
     }
 }
