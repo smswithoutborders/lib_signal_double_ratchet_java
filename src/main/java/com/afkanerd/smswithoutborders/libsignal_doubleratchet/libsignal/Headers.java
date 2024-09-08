@@ -30,32 +30,28 @@ public class Headers {
         this.N = N;
     }
 
+    public Headers(byte[] dh, int PN, int N) {
+        this.dh = dh;
+        this.PN = PN;
+        this.N = N;
+    }
+
     public Headers() {}
 
-    public byte[] deSerializeHeader(byte[] serializedHeader) throws NoSuchAlgorithmException, InvalidKeySpecException,
-            NumberFormatException, IOException, ClassNotFoundException {
-        byte[] bytesLen = new byte[4];
-        System.arraycopy(serializedHeader, 0, bytesLen, 0, 4);
-        int len = ByteBuffer.wrap(bytesLen).getInt();
-
+    public static Headers deSerializeHeader(byte[] serializedHeader) throws NumberFormatException {
         byte[] bytesPN = new byte[4];
-        System.arraycopy(serializedHeader, 4, bytesPN, 0, 4);
-        this.PN = ByteBuffer.wrap(bytesPN).getInt();
+        System.arraycopy(serializedHeader, 0, bytesPN, 0, 4);
+        int PN = ByteBuffer.wrap(bytesPN).getInt();
 
         byte[] bytesN = new byte[4];
-        System.arraycopy(serializedHeader, 8, bytesN, 0, 4);
-        this.N = ByteBuffer.wrap(bytesN).getInt();
+        System.arraycopy(serializedHeader, 4, bytesN, 0, 4);
+        int N = ByteBuffer.wrap(bytesN).getInt();
 
-        byte[] pubKey = new byte[len - 12];
-        System.arraycopy(serializedHeader, 12, pubKey, 0, pubKey.length);
-        this.dh = pubKey;
+        byte[] pubKey = new byte[serializedHeader.length - 8];
+        System.arraycopy(serializedHeader, 8, pubKey, 0, pubKey.length);
+        byte[] dh = pubKey;
 
-        if(serializedHeader.length > len) {
-            byte[] buffer = new byte[serializedHeader.length - len];
-            System.arraycopy(serializedHeader, 12 + pubKey.length, buffer, 0, buffer.length);
-            return buffer;
-        }
-        return null;
+        return new Headers(dh, PN, N);
     }
 
     @Override
@@ -75,12 +71,6 @@ public class Headers {
         byte[] bytesN = new byte[4];
         ByteBuffer.wrap(bytesN).putInt(this.N);
 
-        byte[] pubKey = this.dh;
-
-        int len = 4 + bytesPN.length + bytesN.length + pubKey.length;
-        byte[] bytesLen = new byte[4];
-        ByteBuffer.wrap(bytesLen).putInt(len);
-
-        return Bytes.concat(bytesLen, bytesPN, bytesN, pubKey);
+        return Bytes.concat(bytesPN, bytesN, this.dh);
     }
 }

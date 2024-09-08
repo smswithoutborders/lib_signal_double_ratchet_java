@@ -46,7 +46,7 @@ public class Protocols {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static byte[] DH(Pair<byte[], byte[]> dhPair, byte[] peerPublicKey) throws GeneralSecurityException, IOException, InterruptedException {
+    public static byte[] DH(Pair<byte[], byte[]> dhPair, byte[] peerPublicKey) {
         SecurityCurve25519 securityCurve25519 = new SecurityCurve25519(dhPair.first);
         return securityCurve25519.calculateSharedSecret(peerPublicKey);
     }
