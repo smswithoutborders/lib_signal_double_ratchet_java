@@ -141,16 +141,16 @@ public class States {
     }
 
 
-    public static class StatesMKSKIPPED implements JsonSerializer<Map<Pair<PublicKey, Integer>, byte[]>> {
+    public static class StatesMKSKIPPED implements JsonSerializer<Map<Pair<byte[], Integer>, byte[]>> {
         public final static String PUBLIC_KEY = "PUBLIC_KEY";
         public final static String N = "N";
         public final static String MK = "MK";
 
         @Override
-        public JsonElement serialize(Map<Pair<PublicKey, Integer>, byte[]> src, Type typeOfSrc, JsonSerializationContext context) {
+        public JsonElement serialize(Map<Pair<byte[], Integer>, byte[]> src, Type typeOfSrc, JsonSerializationContext context) {
             JsonArray jsonArray = new JsonArray();
-            for(Map.Entry<Pair<PublicKey, Integer>, byte[]> entry: src.entrySet()) {
-                String publicKey = Base64.encodeToString(entry.getKey().first.getEncoded(), Base64.NO_WRAP);
+            for(Map.Entry<Pair<byte[], Integer>, byte[]> entry: src.entrySet()) {
+                String publicKey = Base64.encodeToString(entry.getKey().first, Base64.NO_WRAP);
                 Integer n = entry.getKey().second;
 
                 JsonObject jsonObject1 = new JsonObject();

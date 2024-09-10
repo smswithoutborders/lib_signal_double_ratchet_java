@@ -58,7 +58,8 @@ public class Protocols {
     }
 
     public static Pair<byte[], byte[]> KDF_CK(byte[] ck) throws GeneralSecurityException {
-        Mac mac = CryptoHelpers.HMAC(ck);
+//        Mac mac = CryptoHelpers.HMAC512(ck);
+        Mac mac = CryptoHelpers.HMAC256(ck);
         byte[] _ck = mac.doFinal(new byte[]{0x01});
         byte[] mk = mac.doFinal(new byte[]{0x02});
         return new Pair<>(_ck, mk);

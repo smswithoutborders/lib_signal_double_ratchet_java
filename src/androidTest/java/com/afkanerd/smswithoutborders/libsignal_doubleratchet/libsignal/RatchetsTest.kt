@@ -38,10 +38,24 @@ class RatchetsTest {
         val (header, aliceCipherText) = Ratchets.ratchetEncrypt(aliceState, originalText,
             bob.generateKey())
 
+        var header1: Headers? = null
+        var aliceCipherText1: ByteArray? = null
+        for(i in 1..10) {
+            val (header, aliceCipherText) = Ratchets.ratchetEncrypt(aliceState, originalText,
+                bob.generateKey())
+            header1 = header
+            aliceCipherText1 = aliceCipherText
+        }
+
         val bobPlainText = Ratchets.ratchetDecrypt(bobState, header, aliceCipherText,
             bob.generateKey())
 
+        val bobPlainText1 = Ratchets.ratchetDecrypt(bobState, header1, aliceCipherText1,
+            bob.generateKey())
+        println(bobState.serializedStates)
+
         assertArrayEquals(originalText, bobPlainText)
+        assertArrayEquals(originalText, bobPlainText1)
     }
 }
 

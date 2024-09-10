@@ -1,20 +1,14 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet;
 
 import android.util.Base64;
-import android.util.Log;
 
 import com.google.common.primitives.Bytes;
 import com.google.crypto.tink.subtle.Hkdf;
 
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
-import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -34,15 +28,14 @@ public class CryptoHelpers {
     }
 
     public static Mac buildVerificationHash(byte[] authKey, byte[] AD, byte[] cipherText) throws GeneralSecurityException {
-        Mac mac = CryptoHelpers.HMAC(authKey);
+        Mac mac = CryptoHelpers.HMAC256(authKey);
         byte[] updatedParams = Bytes.concat(AD, cipherText);
         mac.update(updatedParams);
         return mac;
     }
 
     public static byte[] verifyCipherText(String ALGO, byte[] mk, byte[] cipherText, byte[] AD) throws Exception {
-//        final int SHA256_DIGEST_LEN = 32;
-        final int SHA256_DIGEST_LEN = 64;
+        final int SHA256_DIGEST_LEN = 32;
 
         byte[] hkdfOutput = getCipherMacParameters(ALGO, mk);
         byte[] key = new byte[32];
@@ -62,33 +55,6 @@ public class CryptoHelpers {
         byte[] reconstructedMac =
                 buildVerificationHash(authenticationKey, AD, extractedCipherText)
                         .doFinal();
-//        Log.d(CryptoHelpers.class.getName(), "Building recon AUTHKEY:" +
-//                Base64.encodeToString(authenticationKey, Base64.NO_WRAP) + ":" +
-//                Base64.encodeToString(authenticationKey, Base64.NO_WRAP).length());
-//        Log.d(CryptoHelpers.class.getName(), "Building recon AD:" +
-//                Base64.encodeToString(AD, Base64.NO_WRAP) + ":" +
-//                Base64.encodeToString(AD, Base64.NO_WRAP).length());
-//        Log.d(CryptoHelpers.class.getName(), "Building recon cipher:" +
-//                Base64.encodeToString(extractedCipherText, Base64.NO_WRAP) + ":" +
-//                Base64.encodeToString(extractedCipherText, Base64.NO_WRAP).length());
-//        Log.d(CryptoHelpers.class.getName(), "veri authkey: " +
-//                Base64.encodeToString(authenticationKey, Base64.NO_WRAP) + ":" +
-//                Base64.encodeToString(authenticationKey, Base64.NO_WRAP).length());
-//        Log.d(CryptoHelpers.class.getName(), "veri mk: " +
-//                Base64.encodeToString(mk, Base64.NO_WRAP) + ":" +
-//                Base64.encodeToString(mk, Base64.NO_WRAP).length());
-//        Log.d(CryptoHelpers.class.getName(), "veri AD: " +
-//                Base64.encodeToString(AD, Base64.NO_WRAP) + ":" +
-//                Base64.encodeToString(AD, Base64.NO_WRAP).length());
-//        Log.d(CryptoHelpers.class.getName(), "ext ciphertext: " +
-//                Base64.encodeToString(extractedCipherText, Base64.NO_WRAP) + ":" +
-//                Base64.encodeToString(extractedCipherText, Base64.NO_WRAP).length());
-//        Log.d(CryptoHelpers.class.getName(), "expect mac: " +
-//                Base64.encodeToString(macValue, Base64.NO_WRAP) + ":" +
-//                Base64.encodeToString(macValue, Base64.NO_WRAP).length());
-//        Log.d(CryptoHelpers.class.getName(), "recon mac: " +
-//                Base64.encodeToString(reconstructedMac, Base64.NO_WRAP) + ":" +
-//                Base64.encodeToString(reconstructedMac, Base64.NO_WRAP).length());
         if(Arrays.equals(macValue, reconstructedMac)) {
             return extractedCipherText;
         }
@@ -106,19 +72,12 @@ public class CryptoHelpers {
         return outputs;
     }
 
-    public static Mac HMAC(byte[] data) throws GeneralSecurityException {
-//        String algorithm = "HmacSHA256";
-        String algorithm = "HmacSHA512";
+    public static Mac HMAC256(byte[] data) throws GeneralSecurityException {
+        String algorithm = "HmacSHA256";
         Mac hmacOutput = Mac.getInstance(algorithm);
         SecretKey key = new SecretKeySpec(data, algorithm);
         hmacOutput.init(key);
         return hmacOutput;
-    }
-
-    public static String convertPublicKeyToPEMFormat(byte[] publicKey) {
-        return pemStartPrefix
-                + Base64.encodeToString(publicKey, Base64.NO_WRAP) +
-                pemEndPrefix;
     }
 
     public static byte[] generateRandomBytes(int length) {
