@@ -14,7 +14,7 @@ class SecurityAESTest {
 
         val input = CryptoHelpers.generateRandomBytes(277)
         val cipher = SecurityAES.encryptAES256CBC(input, secretKey.encoded, null)
-        val output = SecurityAES.decryptAES256CBC(cipher, secretKey.encoded)
+        val output = SecurityAES.decryptAES256CBC(cipher, secretKey.encoded, null)
 
         assertArrayEquals(input, output)
     }

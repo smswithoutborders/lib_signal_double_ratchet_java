@@ -85,9 +85,11 @@ public class Protocols {
 
         byte[] hkdfOutput = getCipherMacParameters(ALGO, mk);
         byte[] key = new byte[32];
+        byte[] iv = new byte[16];
         System.arraycopy(hkdfOutput, 0, key, 0, 32);
+        System.arraycopy(hkdfOutput, 64, iv, 0, 16);
 
-        return SecurityAES.decryptAES256CBC(cipherText, key);
+        return SecurityAES.decryptAES256CBC(cipherText, key, iv);
     }
 
     public static byte[] CONCAT(byte[] AD, Headers headers) throws IOException {

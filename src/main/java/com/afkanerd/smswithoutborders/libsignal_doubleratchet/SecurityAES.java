@@ -64,32 +64,29 @@ public class SecurityAES {
         if(iv != null) {
             IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
             cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
-        } else {
-            cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
+            return cipher.doFinal(input);
         }
+
+        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
         byte[] ciphertext = cipher.doFinal(input);
         return Bytes.concat(cipher.getIV(), ciphertext);
     }
 
-    public static byte[] decryptAES256CBC(byte[] input, byte[] sharedKey) throws Throwable {
-        try {
-            SecretKeySpec secretKeySpec = new SecretKeySpec(sharedKey, ALGORITHM);
+    public static byte[] decryptAES256CBC(byte[] input, byte[] sharedKey, byte[] iv) throws Throwable {
+        SecretKeySpec secretKeySpec = new SecretKeySpec(sharedKey, ALGORITHM);
 
-            byte[] iv = new byte[16];
+        Cipher cipher = Cipher.getInstance(DEFAULT_AES_ALGORITHM);
+        if(iv == null) {
+            iv = new byte[16];
             System.arraycopy(input, 0, iv, 0, 16);
 
             byte[] content = new byte[input.length - 16];
             System.arraycopy(input, 16, content, 0, content.length);
-
-            IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
-
-            Cipher cipher = Cipher.getInstance(DEFAULT_AES_ALGORITHM);
-            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
-            return cipher.doFinal(content);
+            input = content;
         }
-        catch (Exception e) {
-            e.printStackTrace();
-            throw new Throwable(e);
-        }
+
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
+        return cipher.doFinal(input);
     }
 }
