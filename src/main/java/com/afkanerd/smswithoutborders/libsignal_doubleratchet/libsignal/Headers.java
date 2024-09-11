@@ -8,6 +8,7 @@ import com.google.common.primitives.Bytes;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
@@ -41,17 +42,16 @@ public class Headers {
     public static Headers deSerializeHeader(byte[] serializedHeader) throws NumberFormatException {
         byte[] bytesPN = new byte[4];
         System.arraycopy(serializedHeader, 0, bytesPN, 0, 4);
-        int PN = ByteBuffer.wrap(bytesPN).getInt();
+        int PN = ByteBuffer.wrap(bytesPN).order(ByteOrder.LITTLE_ENDIAN).getInt();
 
         byte[] bytesN = new byte[4];
         System.arraycopy(serializedHeader, 4, bytesN, 0, 4);
-        int N = ByteBuffer.wrap(bytesN).getInt();
+        int N = ByteBuffer.wrap(bytesN).order(ByteOrder.LITTLE_ENDIAN).getInt();
 
         byte[] pubKey = new byte[serializedHeader.length - 8];
         System.arraycopy(serializedHeader, 8, pubKey, 0, pubKey.length);
-        byte[] dh = pubKey;
 
-        return new Headers(dh, PN, N);
+        return new Headers(pubKey, PN, N);
     }
 
     @Override
@@ -66,10 +66,10 @@ public class Headers {
 
     public byte[] getSerialized() throws IOException {
         byte[] bytesPN = new byte[4];
-        ByteBuffer.wrap(bytesPN).putInt(this.PN);
+        ByteBuffer.wrap(bytesPN).order(ByteOrder.LITTLE_ENDIAN).putInt(this.PN);
 
         byte[] bytesN = new byte[4];
-        ByteBuffer.wrap(bytesN).putInt(this.N);
+        ByteBuffer.wrap(bytesN).order(ByteOrder.LITTLE_ENDIAN).putInt(this.N);
 
         return Bytes.concat(bytesPN, bytesN, this.dh);
     }
