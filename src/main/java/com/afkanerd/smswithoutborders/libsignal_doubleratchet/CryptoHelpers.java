@@ -3,7 +3,6 @@ package com.afkanerd.smswithoutborders.libsignal_doubleratchet;
 import android.util.Base64;
 
 import com.google.common.primitives.Bytes;
-import com.google.crypto.tink.subtle.Hkdf;
 
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
@@ -12,6 +11,8 @@ import java.util.Arrays;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+
+import at.favre.lib.hkdf.HKDF;
 
 public class CryptoHelpers {
 
@@ -64,7 +65,9 @@ public class CryptoHelpers {
     public static byte[][] HKDF(String algo, byte[] ikm, byte[] salt, byte[] info, int len, int num) throws GeneralSecurityException {
         if (num < 1)
             num = 1;
-        byte[] output = Hkdf.computeHkdf(algo, ikm, salt, info, len * num);
+
+        HKDF hkdf = algo.equals("HMACSHA512") ? HKDF.fromHmacSha512() : HKDF.fromHmacSha256();
+        byte[] output = hkdf.extractAndExpand(salt, ikm, info, len * num);
         byte[][] outputs = new byte[num][len];
         for (int i = 0; i < num; ++i) {
             System.arraycopy(output, i * len, outputs[i], 0, len);

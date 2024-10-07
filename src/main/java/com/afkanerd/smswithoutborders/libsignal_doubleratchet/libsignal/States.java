@@ -2,10 +2,10 @@ package com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal;
 
 import android.util.Log;
 import android.util.Pair;
+import android.util.Base64;
 
 import androidx.annotation.Nullable;
 
-import com.google.crypto.tink.subtle.Base64;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
