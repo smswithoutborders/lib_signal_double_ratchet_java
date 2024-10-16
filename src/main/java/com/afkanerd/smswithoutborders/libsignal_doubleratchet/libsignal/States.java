@@ -49,8 +49,6 @@ public class States {
         JSONObject jsonObject = new JSONObject(states);
         if(jsonObject.has("DHs")) {
             String[] encodedValues = jsonObject.getString("DHs").split(" ");
-            Log.d(getClass().getName(), "Decoded values: " + jsonObject.getString("DHs"));
-            Log.d(getClass().getName(), "Decoded values: " + Arrays.toString(encodedValues));
             this.DHs = new Pair<>(android.util.Base64.decode(encodedValues[0], Base64.NO_WRAP),
                     android.util.Base64.decode(encodedValues[1], Base64.NO_WRAP));
         }
