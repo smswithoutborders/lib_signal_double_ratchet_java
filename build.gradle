@@ -54,17 +54,17 @@ mavenPublishing {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar', "*.aar"])
-    implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'com.google.guava:guava:33.0.0-jre'
-    implementation 'com.madgag.spongycastle:prov:1.58.0.0'
-    implementation 'org.conscrypt:conscrypt-android:2.2.1'
-    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation libs.androidx.appcompat
+    implementation libs.guava
+    implementation libs.prov
+    implementation libs.conscrypt.android
+    implementation libs.androidx.core.ktx.v1131
 
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+    testImplementation libs.junit
+    androidTestImplementation libs.androidx.junit
+    androidTestImplementation libs.androidx.espresso.core
 
-    implementation 'com.github.netricecake:x25519:2.0'
-    implementation 'com.google.code.gson:gson:2.11.0'
-    implementation 'at.favre.lib:hkdf:2.0.0'
+    implementation libs.x25519
+    implementation libs.gson
+    implementation libs.hkdf
 }
