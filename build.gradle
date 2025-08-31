@@ -4,15 +4,16 @@ plugins {
     id 'signing'
     id 'org.jetbrains.kotlin.android'
     id "com.vanniktech.maven.publish" version "0.34.0"
+    id 'org.jetbrains.kotlin.plugin.serialization' version '2.2.10'
 }
 
 android {
     namespace 'com.afkanerd.smswithoutborders.libsignal_doubleratchet'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         minSdk 24
-        targetSdk 35
+        targetSdk 36
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aarMetadata {
@@ -67,4 +68,17 @@ dependencies {
     implementation 'com.github.netricecake:x25519:2.0'
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'at.favre.lib:hkdf:2.0.0'
+
+    implementation "androidx.datastore:datastore-preferences:1.1.7"
+
+    // optional - RxJava2 support
+    implementation "androidx.datastore:datastore-preferences-rxjava2:1.1.7"
+
+    // optional - RxJava3 support
+    implementation "androidx.datastore:datastore-preferences-rxjava3:1.1.7"
+
+    implementation "androidx.datastore:datastore-preferences-core:1.1.7"
+
+    implementation 'com.google.code.gson:gson:2.11.0'
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
 }

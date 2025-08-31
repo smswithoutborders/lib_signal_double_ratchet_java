@@ -24,7 +24,6 @@ public class SecurityAES {
 
     public static final String ALGORITHM = "AES";
 
-
     public static SecretKey generateSecretKey(int size) throws NoSuchAlgorithmException {
         KeyGenerator keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES);
         keyGenerator.init(size); // Adjust key size as needed
