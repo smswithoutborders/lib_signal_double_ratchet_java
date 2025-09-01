@@ -9,20 +9,35 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityRSA
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyStore
 import java.security.KeyStoreException
 import java.security.NoSuchAlgorithmException
 import java.security.UnrecoverableEntryException
 import java.security.cert.CertificateException
+import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.X509EncodedKeySpec
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "secure_comms")
 
-fun Context.getKeypairValues(address: String): Flow<Set<String>?> {
-    val keyValue = stringSetPreferencesKey(address)
-    return dataStore.data.map { it[keyValue] }
+suspend fun Context.getKeypairValues(address: String): Pair<ByteArray?, ByteArray?> {
+    val keyValue = stringSetPreferencesKey(address + "_keypair")
+    val keypairSet = dataStore.data.first()[keyValue]
+    val encryptionPublicKey = getKeypairFromKeystore(address)
+
+    val publicKey = SecurityRSA.decrypt(
+        encryptionPublicKey?.private,
+        Base64.decode(keypairSet?.elementAt(0), Base64.DEFAULT)
+    )
+    val privateKey = SecurityRSA.decrypt(
+        encryptionPublicKey?.private,
+        Base64.decode(keypairSet?.elementAt(1), Base64.DEFAULT)
+    )
+    return Pair(publicKey, privateKey)
 }
 
 suspend fun Context.setKeypairValues(
@@ -32,7 +47,7 @@ suspend fun Context.setKeypairValues(
 ) {
     val encryptionPublicKey = SecurityRSA.generateKeyPair(address)
 
-    val keyValue = stringSetPreferencesKey(address)
+    val keyValue = stringSetPreferencesKey(address + "_keypair")
     dataStore.edit { secureComms->
         secureComms[keyValue] = setOf(
             Base64.encodeToString(publicKey.run {
