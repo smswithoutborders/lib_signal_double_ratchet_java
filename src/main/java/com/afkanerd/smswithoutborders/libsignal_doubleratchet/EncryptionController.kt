@@ -176,6 +176,13 @@ private suspend fun Context.setEncryptionModeStates(
     }
 }
 
+suspend fun Context.removeEncryptionModeStates(address: String) {
+    val keyValue = stringPreferencesKey(address + "_mode_states")
+    dataStore.edit { secureComms ->
+        secureComms.remove(keyValue)
+    }
+}
+
 fun Context.getEncryptionModeStates(address: String): Flow<String?> {
     val keyValue = stringPreferencesKey(address + "_mode_states")
     return dataStore.data.map { it[keyValue] }
