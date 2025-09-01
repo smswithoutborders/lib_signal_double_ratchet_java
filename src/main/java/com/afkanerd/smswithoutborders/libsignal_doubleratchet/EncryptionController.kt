@@ -23,7 +23,8 @@ object EncryptionController {
     @Serializable
     enum class SecureRequestType(val code: Byte) {
         TYPE_REQUEST(0x01),
-        TYPE_ACCEPT(0x02);
+        TYPE_ACCEPT(0x02),
+        TYPE_MESSAGE(0x03);
 
         companion object {
             fun fromCode(code: Byte): SecureRequestType? =
@@ -64,6 +65,11 @@ object EncryptionController {
             .order(ByteOrder.LITTLE_ENDIAN).putInt(publicKey.size)
 
         return mn + lenPubKey + publicKey
+    }
+
+    fun getRequestType(data: ByteArray): SecureRequestType {
+        val type = data[0]
+        return SecureRequestType.fromCode(type) ?: SecureRequestType.TYPE_MESSAGE
     }
 
     suspend fun receiveRequest(context: Context, address: String) {
