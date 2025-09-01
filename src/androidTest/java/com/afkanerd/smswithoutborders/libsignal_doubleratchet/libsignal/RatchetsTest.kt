@@ -3,15 +3,11 @@ package com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal
 import android.content.Context
 import androidx.core.util.component1
 import androidx.core.util.component2
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.afkanerd.smswithoutborders.libsignal_doubleratchet.KeystoreHelpers
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityCurve25519
-import junit.framework.TestCase.assertEquals
 import org.junit.Assert.assertArrayEquals
 import org.junit.Test
-import org.junit.runner.RunWith
 import java.security.SecureRandom
 
 @SmallTest
