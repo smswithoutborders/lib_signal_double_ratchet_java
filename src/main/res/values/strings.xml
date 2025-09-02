@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">SMSWithoutBorders DoubleRatchet LibSignal</string>
     <string name="missing_public_key">Missing public key</string>
+    <string name="ratchet_states_removed">Ratchet states removed</string>
 </resources>

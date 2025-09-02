@@ -29,6 +29,9 @@ import javax.crypto.spec.SecretKeySpec
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "secure_comms")
 
+/**
+ * Pair<PublicKey, PrivateKey>
+ */
 suspend fun Context.getKeypairValues(address: String): Pair<ByteArray?, ByteArray?> {
     val keyValue = stringSetPreferencesKey(address + "_keypair")
     val keypairSet = dataStore.data.first()[keyValue]

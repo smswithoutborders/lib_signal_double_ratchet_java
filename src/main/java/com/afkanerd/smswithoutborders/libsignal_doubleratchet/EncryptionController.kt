@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 
 object EncryptionController {
@@ -51,7 +52,7 @@ object EncryptionController {
     private fun extractMessage(data: ByteArray) : Pair<Headers, ByteArray> {
         val lenHeader = data[1].toInt()
         val lenMessage = data[2].toInt()
-        val header = data.copyOfRange(3, lenHeader)
+        val header = data.copyOfRange(3, 3 + lenHeader)
         val message = data.copyOfRange(3 + lenHeader, (3 + lenHeader + lenMessage))
         return Pair(Headers.deSerializeHeader(header), message)
     }
@@ -119,6 +120,7 @@ object EncryptionController {
                         SecureRequestMode.REQUEST_RECEIVED
                     }
                     MessageRequestType.TYPE_ACCEPT -> {
+                        context.removeEncryptionRatchetStates(address)
                         SecureRequestMode.REQUEST_ACCEPTED
                     }
                     else -> return null
@@ -158,9 +160,12 @@ object EncryptionController {
         address: String,
         text: String
     ): String? {
-        val payload = try {
-            extractMessage(Base64.decode(text, Base64.DEFAULT))
-        } catch(e: Exception) {
+
+        val data = Base64.decode(text, Base64.DEFAULT)
+        if(MessageRequestType.fromCode(data[0]) != MessageRequestType.TYPE_MESSAGE)
+            return null
+
+        val payload = try { extractMessage(data) } catch(e: Exception) {
             throw e
         }
 
@@ -187,23 +192,31 @@ object EncryptionController {
         if(currentState == null) {
             state = States()
             val sk = context.calculateSharedSecret(address, publicKeyBytes)
-            Ratchets.ratchetInitAlice(state, sk, publicKeyBytes)
+            val keypair = context.getKeypairValues(address) //public private
+
+            Ratchets.ratchetInitBob(
+                state,
+                sk,
+                android.util.Pair(keypair.second, keypair.first)
+            )
         }
         else state = States(String(currentState))
 
         val keypair = context.getKeypairValues(address)
-        return try {
-            context.saveBinaryDataEncrypted(keystore,
-                state.serializedStates.encodeToByteArray())
-            String(Ratchets.ratchetDecrypt(
+        var decryptedText: String?
+        try {
+            decryptedText = String(Ratchets.ratchetDecrypt(
                 state,
                 payload.first,
                 payload.second,
                 keypair.first
             ))
+            context.saveBinaryDataEncrypted(keystore,
+                state.serializedStates.encodeToByteArray())
         } catch(e: Exception) {
             throw e
         }
+        return decryptedText
     }
 
     @Throws
@@ -293,6 +306,19 @@ private suspend fun Context.setEncryptionModeStates(
         }
 
         secureComms[keyValue] = Gson().toJson(savedEncryptedModes)
+    }
+}
+
+private suspend fun Context.removeEncryptionRatchetStates(address: String) {
+    val keyValue = stringPreferencesKey(address + "_ratchet_state")
+    dataStore.edit { secureComms ->
+        secureComms.remove(keyValue)
+        withContext(Dispatchers.Main) {
+            Toast.makeText(
+                this@removeEncryptionRatchetStates,
+                getString(R.string.ratchet_states_removed),
+                Toast.LENGTH_LONG).show()
+        }
     }
 }
 
