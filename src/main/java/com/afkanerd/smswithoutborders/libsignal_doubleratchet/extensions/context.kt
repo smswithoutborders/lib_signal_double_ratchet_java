@@ -5,9 +5,12 @@ import android.util.Base64
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityAES
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityRSA
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -21,6 +24,8 @@ import java.security.UnrecoverableEntryException
 import java.security.cert.CertificateException
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
+import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "secure_comms")
 
@@ -51,10 +56,10 @@ suspend fun Context.setKeypairValues(
     dataStore.edit { secureComms->
         secureComms[keyValue] = setOf(
             Base64.encodeToString(publicKey.run {
-                SecurityRSA.encrypt(encryptionPublicKey, publicKey)
+                SecurityRSA.encrypt(encryptionPublicKey, this)
             }, Base64.DEFAULT),
             Base64.encodeToString(privateKey.run {
-                SecurityRSA.encrypt(encryptionPublicKey, privateKey)
+                SecurityRSA.encrypt(encryptionPublicKey, this)
             }, Base64.DEFAULT),
         )
     }
@@ -78,4 +83,68 @@ fun Context.getKeypairFromKeystore(keystoreAlias: String): KeyPair? {
         return KeyPair(publicKey, privateKey)
     }
     return null
+}
+
+data class SavedBinaryData(
+    val key: ByteArray,
+    val algorithm: String,
+    val data: ByteArray,
+)
+
+/**
+ *  Would overwrite anything with the same Keystore Alias
+ */
+@Throws
+suspend fun Context.saveBinaryDataEncrypted(
+    keystoreAlias: String,
+    data: ByteArray,
+) : Boolean {
+    val keyValue = stringPreferencesKey(keystoreAlias)
+
+    val aesGcmKey = SecurityAES.generateSecretKey(256)
+    val data = SecurityAES.encryptAESGCM(data, aesGcmKey)
+
+//    val encryptionPublicKey = getKeypairFromKeystore(keystoreAlias)?.public
+//        ?: SecurityRSA.generateKeyPair(keystoreAlias)
+
+    var saved = false
+    dataStore.edit { secureComms->
+        try {
+            val encryptionPublicKey = SecurityRSA.generateKeyPair(keystoreAlias)
+            SecurityRSA.encrypt(encryptionPublicKey, aesGcmKey.encoded)?.let { key ->
+                secureComms[keyValue] = Gson().toJson(
+                    SavedBinaryData(
+                        key = key,
+                        algorithm = aesGcmKey.algorithm,
+                        data = data
+                    )
+                )
+                saved = true
+            }
+        } catch(e: Exception) {
+            throw e
+        }
+    }
+    return saved
+}
+
+@Throws
+suspend fun Context.getEncryptedBinaryData(keystoreAlias: String): ByteArray? {
+    val keyValue = stringPreferencesKey(keystoreAlias)
+    val data = dataStore.data.first()[keyValue]
+    if(data == null) return null
+
+    val savedBinaryData = Gson().fromJson(data, SavedBinaryData::class.java)
+
+    return try {
+        val encryptionPublicKey = getKeypairFromKeystore(keystoreAlias)
+        SecurityRSA.decrypt(encryptionPublicKey?.private, savedBinaryData.key)
+            ?.run {
+                SecurityAES.decryptAESGCM(savedBinaryData.data,
+                    SecretKeySpec(this, savedBinaryData.algorithm)
+                )
+            }
+    } catch(e: Exception) {
+        throw e
+    }
 }
