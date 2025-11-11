@@ -332,6 +332,11 @@ suspend fun Context.removeEncryptionModeStates(address: String) {
     }
 }
 
+fun Context.getEncryptionRatchetStates(address: String): Flow<String?> {
+    val keyValue = stringPreferencesKey(address + "_ratchet_state")
+    return dataStore.data.map { it[keyValue] }
+}
+
 suspend fun Context.getEncryptionModeStatesSync(address: String): String? {
     val keyValue = stringPreferencesKey(address + "_mode_states")
     return dataStore.data.first()[keyValue]
