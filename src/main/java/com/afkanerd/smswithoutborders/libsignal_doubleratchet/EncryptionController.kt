@@ -33,7 +33,7 @@ object EncryptionController {
         REQUEST_ACCEPTED,
     }
 
-    private enum class MessageRequestType(val code: Byte) {
+    enum class MessageRequestType(val code: Byte) {
         TYPE_REQUEST(0x01.toByte()),
         TYPE_ACCEPT(0x02.toByte()),
         TYPE_MESSAGE(0x03.toByte());
@@ -41,6 +41,9 @@ object EncryptionController {
         companion object {
             fun fromCode(code: Byte): MessageRequestType? =
                 entries.find { it.code == code } // Kotlin 1.9+, use values() before that
+
+            fun fromMessage(message: ByteArray): MessageRequestType? =
+                entries.find { it.code == message[0] } // Kotlin 1.9+, use values() before that
         }
     }
 
@@ -309,7 +312,7 @@ private suspend fun Context.setEncryptionModeStates(
     }
 }
 
-private suspend fun Context.removeEncryptionRatchetStates(address: String) {
+suspend fun Context.removeEncryptionRatchetStates(address: String) {
     val keyValue = stringPreferencesKey(address + "_ratchet_state")
     dataStore.edit { secureComms ->
         secureComms.remove(keyValue)
@@ -327,6 +330,11 @@ suspend fun Context.removeEncryptionModeStates(address: String) {
     dataStore.edit { secureComms ->
         secureComms.remove(keyValue)
     }
+}
+
+fun Context.getEncryptionRatchetStates(address: String): Flow<String?> {
+    val keyValue = stringPreferencesKey(address + "_ratchet_state")
+    return dataStore.data.map { it[keyValue] }
 }
 
 suspend fun Context.getEncryptionModeStatesSync(address: String): String? {
