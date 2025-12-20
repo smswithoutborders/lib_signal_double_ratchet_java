@@ -123,7 +123,7 @@ object EncryptionController {
                         SecureRequestMode.REQUEST_RECEIVED
                     }
                     MessageRequestType.TYPE_ACCEPT -> {
-                        context.removeEncryptionRatchetStates(address)
+//                        context.removeEncryptionRatchetStates(address)
                         SecureRequestMode.REQUEST_ACCEPTED
                     }
                     else -> return null
