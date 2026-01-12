@@ -11,20 +11,14 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityAES
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityRSA
 import com.google.gson.Gson
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import java.io.IOException
-import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyStore
 import java.security.KeyStoreException
 import java.security.NoSuchAlgorithmException
 import java.security.UnrecoverableEntryException
 import java.security.cert.CertificateException
-import java.security.spec.PKCS8EncodedKeySpec
-import java.security.spec.X509EncodedKeySpec
-import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "secure_comms")
@@ -134,8 +128,7 @@ suspend fun Context.saveBinaryDataEncrypted(
 @Throws
 suspend fun Context.getEncryptedBinaryData(keystoreAlias: String): ByteArray? {
     val keyValue = stringPreferencesKey(keystoreAlias)
-    val data = dataStore.data.first()[keyValue]
-    if(data == null) return null
+    val data = dataStore.data.first()[keyValue] ?: return null
 
     val savedBinaryData = Gson().fromJson(data, SavedBinaryData::class.java)
 
