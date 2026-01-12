@@ -2,6 +2,7 @@ package com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal
 
 import androidx.test.filters.SmallTest
 import junit.framework.TestCase.assertEquals
+import kotlinx.serialization.json.Json
 import org.junit.Test
 import java.security.SecureRandom
 
@@ -12,11 +13,8 @@ class StateTest {
         val state = States()
         state.DHs = android.util.Pair(SecureRandom.getSeed(32),
             SecureRandom.getSeed(32))
-        val serializedStates = state.serializedStates
-        println("Encoded values: $serializedStates")
-        val state1 = States(serializedStates)
-        println(state1.serializedStates)
-
-        assertEquals(state, state1)
+        val serializedStates = Json.encodeToString(state)
+        val deserializedStates = Json.decodeFromString<States>(serializedStates)
+        assertEquals(state, deserializedStates)
     }
 }

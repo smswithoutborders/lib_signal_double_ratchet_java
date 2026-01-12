@@ -1,7 +1,5 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet;
 
-import android.util.Base64;
-
 import com.google.common.primitives.Bytes;
 
 import java.security.GeneralSecurityException;
@@ -30,7 +28,7 @@ public class CryptoHelpers {
 
     public static Mac buildVerificationHash(byte[] authKey, byte[] AD, byte[] cipherText) throws GeneralSecurityException {
         Mac mac = CryptoHelpers.HMAC256(authKey);
-        byte[] updatedParams = Bytes.concat(AD, cipherText);
+        byte[] updatedParams = (AD == null) ? cipherText : Bytes.concat(AD, cipherText);
         mac.update(updatedParams);
         return mac;
     }
@@ -85,9 +83,7 @@ public class CryptoHelpers {
 
     public static byte[] generateRandomBytes(int length) {
         SecureRandom random = new SecureRandom();
-        byte[] bytes = new
-
-                byte[length];
+        byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return bytes;
     }

@@ -203,7 +203,7 @@ object EncryptionController {
                 android.util.Pair(keypair.second, keypair.first)
             )
         }
-        else state = States(String(currentState))
+        else state = States.deserialize(String(currentState))
 
         val keypair = context.getKeypairValues(address)
         var decryptedText: String?
@@ -215,7 +215,7 @@ object EncryptionController {
                 keypair.first
             ))
             context.saveBinaryDataEncrypted(keystore,
-                state.serializedStates.encodeToByteArray())
+                state.serialize().encodeToByteArray())
         } catch(e: Exception) {
             throw e
         }
@@ -253,7 +253,7 @@ object EncryptionController {
             val sk = context.calculateSharedSecret(address, publicKeyBytes)
             Ratchets.ratchetInitAlice(state, sk, publicKeyBytes)
         }
-        else state = States(String(currentState))
+        else state = States.deserialize(String(currentState))
 
         val ratchetOutput = Ratchets.ratchetEncrypt(state,
             text.encodeToByteArray(), publicKeyBytes)
@@ -264,7 +264,7 @@ object EncryptionController {
                 ratchetOutput.second
             )
             context.saveBinaryDataEncrypted(keystore,
-                state.serializedStates.encodeToByteArray())
+                state.serialize().encodeToByteArray())
             Base64.encodeToString(message, Base64.DEFAULT)
         } catch(e: Exception) {
             throw e
