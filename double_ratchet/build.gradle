@@ -46,6 +46,15 @@ android {
         }
     }
 }
+publishing {
+    publications {
+        release(MavenPublication) {
+            afterEvaluate {
+                from components.release
+            }
+        }
+    }
+}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar', "*.aar"])
