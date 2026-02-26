@@ -145,8 +145,7 @@ suspend fun Context.saveBinaryDataEncrypted(
 @Throws
 suspend fun Context.getEncryptedBinaryData(keystoreAlias: String): ByteArray? {
     val keyValue = stringPreferencesKey(keystoreAlias)
-    val data = dataStore.data.first()[keyValue]
-    if(data == null) return null
+    val data = dataStore.data.first()[keyValue] ?: return null
 
     val savedBinaryData = Gson().fromJson(data, SavedBinaryData::class.java)
 
