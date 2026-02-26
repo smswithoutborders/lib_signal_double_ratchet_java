@@ -1,4 +1,11 @@
-include ':double_ratchet'
+pluginManagement {
+    plugins {
+        id 'maven-publish'
+        id 'signing'
+        id 'org.jetbrains.kotlin.android' version '2.3.10'
+        id 'org.jetbrains.kotlin.plugin.serialization' version '2.3.10'
+    }
+}
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -7,3 +14,4 @@ dependencyResolutionManagement {
         maven { setUrl("https://jitpack.io") }
     }
 }
+include ':double_ratchet'
