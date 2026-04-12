@@ -1,84 +1,31 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    ext {
+//        kotlin_version = '1.8.20-RC'
+//        kotlin_version = '1.9.23'
+        kotlin_version = '2.3.10'
+        agp_version = '8.5.0'
+        agp_version1 = '8.12.2'
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:$agp_version1"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
 plugins {
-    id 'com.android.library'
-//    id 'maven-publish'
-    id 'signing'
-    id 'org.jetbrains.kotlin.android'
-    id "com.vanniktech.maven.publish" version "0.34.0"
-    id 'org.jetbrains.kotlin.plugin.serialization' version '2.2.10'
+    // Existing plugins
+//    alias(libs.plugins.compose.compiler) apply false
+//    alias(libs.plugins.org.jetbrains.kotlin.android) apply false
 }
 
-android {
-    namespace 'com.afkanerd.smswithoutborders.libsignal_doubleratchet'
-    compileSdk 36
-
-    defaultConfig {
-        minSdk 24
-        targetSdk 36
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        aarMetadata {
-            minCompileSdk = 24
-        }
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-        nightly {
-        }
-    }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    testFixtures {
-        enable = true
-    }
-
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-}
-
-import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
-mavenPublishing {
-    // the first parameter represennts which variant is published
-    // the second whether to publish a sources jar
-    // the third whether to publish a javadoc jar
-    configure(new AndroidSingleVariantLibrary("release", true, true))
-}
-
-
-
-dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar', "*.aar"])
-    implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'com.google.guava:guava:33.4.8-jre'
-    implementation 'com.madgag.spongycastle:prov:1.58.0.0'
-    implementation 'org.conscrypt:conscrypt-android:2.5.3'
-    implementation 'androidx.core:core-ktx:1.13.1'
-
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
-
-    implementation 'com.github.netricecake:x25519:2.0'
-    implementation 'com.google.code.gson:gson:2.11.0'
-    implementation 'at.favre.lib:hkdf:2.0.0'
-
-    implementation "androidx.datastore:datastore-preferences:1.1.7"
-
-    // optional - RxJava2 support
-    implementation "androidx.datastore:datastore-preferences-rxjava2:1.1.7"
-
-    // optional - RxJava3 support
-    implementation "androidx.datastore:datastore-preferences-rxjava3:1.1.7"
-
-    implementation "androidx.datastore:datastore-preferences-core:1.1.7"
-
-    implementation 'com.google.code.gson:gson:2.11.0'
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
+tasks.register('clean', Delete) {
+    delete rootProject.buildDir
 }
