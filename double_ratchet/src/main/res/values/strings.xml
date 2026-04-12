@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">SMSWithoutBorders DoubleRatchet LibSignal</string>
+    <string name="missing_public_key">Missing public key</string>
+    <string name="ratchet_states_removed">Ratchet states removed</string>
+    <string name="dr_salt">RelaySMS v1</string>
+    <string name="dr_nonce_info">RelaySMS C2S DR v1</string>
+    <string name="dr_rk_info">RelaySMS DRHE v2</string>
+    <string name="dr_encrypt_info">RelaySMS DR_ENCRYPTION v2</string>
+</resources>
