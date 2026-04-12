@@ -161,8 +161,23 @@ class RatchetsTest {
             )
         }
 
-        val plaintext = ratchets.ratchetDecrypt(
+        var plaintext = ratchets.ratchetDecrypt(
             state = bobState,
+            encHeader = ratchetPayload.header,
+            cipherText = ratchetPayload.cipherText,
+            ad = ad
+        )
+
+        assertArrayEquals(originalText, plaintext)
+
+        ratchetPayload = ratchets.ratchetEncrypt(
+            state = bobState,
+            plaintext = originalText,
+            ad = ad
+        )
+
+        plaintext = ratchets.ratchetDecrypt(
+            state = aliceState,
             encHeader = ratchetPayload.header,
             cipherText = ratchetPayload.cipherText,
             ad = ad
