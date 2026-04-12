@@ -16,6 +16,7 @@ import java.io.IOException
 import java.security.KeyPair
 import java.security.KeyStore
 import java.security.KeyStoreException
+import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
 import java.security.UnrecoverableEntryException
@@ -152,3 +153,4 @@ fun Context.generateRandomBytes(length: Int): ByteArray {
     random.nextBytes(bytes)
     return bytes
 }
+

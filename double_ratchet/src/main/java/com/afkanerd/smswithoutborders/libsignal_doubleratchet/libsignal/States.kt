@@ -17,7 +17,7 @@ data class States(
     var Ns: UByte = 0u,
     var Nr: UByte = 0u,
     var PN: UByte = 0u,
-    var DHRs: AsymmetricCipherKeyPair?,
+    var DHRs: AsymmetricCipherKeyPair? = null,
     var DHRr: CipherParameters? = null,
     var HKs: ByteArray? = null,
     var HKr: ByteArray? = null,

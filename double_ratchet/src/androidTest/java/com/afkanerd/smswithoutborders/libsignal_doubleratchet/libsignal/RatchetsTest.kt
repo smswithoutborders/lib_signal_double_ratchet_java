@@ -4,9 +4,11 @@ import android.content.Context
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoUtils
-import com.afkanerd.smswithoutborders.libsignal_doubleratchet.R
-import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityCurve25519
+import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoUtils.sha256
+import com.afkanerd.smswithoutborders.libsignal_doubleratchet.extensions.generateRandomBytes
+import org.bouncycastle.crypto.params.X25519PublicKeyParameters
 import org.junit.Assert.assertArrayEquals
+import org.junit.Before
 import org.junit.Test
 import java.security.SecureRandom
 
@@ -14,146 +16,159 @@ import java.security.SecureRandom
 class RatchetsTest {
     var context: Context =
         InstrumentationRegistry.getInstrumentation().targetContext
-    @Test
-    fun completeRatchetHETest() {
-        val aliceEphemeralKeyPair = SecurityCurve25519()
-        val aliceEphemeralHeaderKeyPair = SecurityCurve25519()
-        val aliceEphemeralNextHeaderKeyPair = SecurityCurve25519()
+    val protocol = Protocols(context)
 
-        val bobStaticKeyPair = SecurityCurve25519()
-        val bobEphemeralKeyPair = SecurityCurve25519()
-        val bobEphemeralHeaderKeyPair = SecurityCurve25519()
-        val bobEphemeralNextHeaderKeyPair = SecurityCurve25519()
+    lateinit var aliceRk: ByteArray
+    lateinit var aliceHk: ByteArray
+    lateinit var aliceNhk: ByteArray
 
-        val aliceNonce = CryptoUtils.generateRandomBytes(16)
-        val bobNonce = CryptoUtils.generateRandomBytes(16)
+    lateinit var bobRk: ByteArray
+    lateinit var bobHk: ByteArray
+    lateinit var bobNhk: ByteArray
 
-        val (aliceSk, aliceSkH, aliceSkNh) = SecurityCurve25519(aliceEphemeralKeyPair.privateKey)
-            .agreeWithAuthAndNonce(
-                authenticationPublicKey = bobStaticKeyPair.generateKey(),
-                authenticationPrivateKey = null,
-                headerPrivateKey = aliceEphemeralHeaderKeyPair.privateKey,
-                nextHeaderPrivateKey = aliceEphemeralNextHeaderKeyPair.privateKey,
-                publicKey = bobEphemeralKeyPair.generateKey(),
-                headerPublicKey = bobEphemeralHeaderKeyPair.generateKey(),
-                nextHeaderPublicKey = bobEphemeralNextHeaderKeyPair.generateKey(),
-                salt = context.getString(R.string.dr_salt).encodeToByteArray(),
-                nonce1 = aliceNonce,
-                nonce2 = bobNonce,
-                info = context.getString(R.string.dr_info).encodeToByteArray()
-            )
+    val aliceKeypair = protocol.generateDH()
+    val bobStaticKeypair = protocol.generateDH()
+    val bobKeypair = protocol.generateDH()
 
-        val (bobSk, bobSkH, bobSkNh) = SecurityCurve25519(bobEphemeralKeyPair.privateKey)
-            .agreeWithAuthAndNonce(
-                authenticationPublicKey = null,
-                authenticationPrivateKey = bobStaticKeyPair.privateKey,
-                headerPrivateKey = bobEphemeralHeaderKeyPair.privateKey,
-                nextHeaderPrivateKey = bobEphemeralNextHeaderKeyPair.privateKey,
-                publicKey = aliceEphemeralKeyPair.generateKey(),
-                headerPublicKey = aliceEphemeralHeaderKeyPair.generateKey(),
-                nextHeaderPublicKey = aliceEphemeralNextHeaderKeyPair.generateKey(),
-                salt = context.getString(R.string.dr_salt).encodeToByteArray(),
-                nonce1 = aliceNonce,
-                nonce2 = bobNonce,
-                info = context.getString(R.string.dr_info).encodeToByteArray()
-            )
+    val salt = "completeRatchetTest_v1".encodeToByteArray()
+    val info = context.generateRandomBytes(16) +
+            (aliceKeypair.public as X25519PublicKeyParameters).encoded +
+            (bobKeypair.public as X25519PublicKeyParameters).encoded +
+            (bobStaticKeypair.public as X25519PublicKeyParameters).encoded
 
-        assertArrayEquals(aliceSk, bobSk)
-        assertArrayEquals(aliceSkH, bobSkH)
-        assertArrayEquals(aliceSkNh, bobSkNh)
-
-        val aliceState = States()
-        RatchetsHE.ratchetInitAlice(
-            state = aliceState,
-            SK = aliceSk,
-            bobDhPublicKey = bobEphemeralKeyPair.generateKey(),
-            sharedHka = aliceSkH,
-            sharedNhkb = aliceSkNh
-        )
-
-        val bobState = States()
-        RatchetsHE.ratchetInitBob(
-            state = bobState,
-            SK = bobSk,
-            bobDhPublicKeypair = bobEphemeralKeyPair.getKeypair(),
-            sharedHka = bobSkH,
-            sharedNhkb = bobSkNh
-        )
-
-        val originalText = SecureRandom.getSeed(32);
-        val (encHeader, aliceCipherText) = RatchetsHE.ratchetEncrypt(
-            aliceState,
-            originalText,
-            bobStaticKeyPair.generateKey()
-        )
-
-        var encHeader1: ByteArray? = null
-        var aliceCipherText1: ByteArray? = null
-        for(i in 1..10) {
-            val (encHeader2, aliceCipherText2) = RatchetsHE.ratchetEncrypt(
-                aliceState,
-                originalText,
-                bobStaticKeyPair.generateKey()
-            )
-            encHeader1 = encHeader2
-            aliceCipherText1 = aliceCipherText2
+    @Before
+    fun start() {
+        CryptoUtils.generateKeysNK(
+            context = context,
+            ephemeralKeyPair = aliceKeypair,
+            authenticationPublicKey = bobStaticKeypair.public,
+            ephemeralPublicKey = bobKeypair.public,
+            salt = salt,
+            info = info
+        ).let {
+            aliceRk = it.first
+            aliceHk = it.second
+            aliceNhk = it.third
         }
 
-        val bobPlainText = RatchetsHE.ratchetDecrypt(
-            state = bobState,
-            encHeader = encHeader,
-            cipherText = aliceCipherText,
-            AD = bobStaticKeyPair.generateKey()
-        )
+        CryptoUtils.generateKeysNKServer(
+            context = context,
+            authenticationKeypair = bobStaticKeypair,
+            ephemeralKeyPair = bobKeypair,
+            ephemeralPublicKey = aliceKeypair.public,
+            salt = salt,
+            info = info
+        ).let {
+            bobRk = it.first
+            bobHk = it.second
+            bobNhk = it.third
+        }
 
-        val bobPlainText1 = RatchetsHE.ratchetDecrypt(
-            state = bobState,
-            encHeader = encHeader1!!,
-            cipherText = aliceCipherText1!!,
-            AD = bobStaticKeyPair.generateKey()
-        )
-
-        assertArrayEquals(originalText, bobPlainText)
-        assertArrayEquals(originalText, bobPlainText1)
+        assertArrayEquals(aliceRk, bobRk)
+        assertArrayEquals(aliceHk, bobHk)
+        assertArrayEquals(aliceNhk, bobNhk)
     }
 
     @Test
     fun completeRatchetTest() {
-        val alice = SecurityCurve25519()
-        val bob = SecurityCurve25519()
-
-        val SK = alice.calculateSharedSecret(bob.generateKey())
-        val SK1 = bob.calculateSharedSecret(alice.generateKey())
-        assertArrayEquals(SK, SK1)
-
+        val ratchets = RatchetsHE(context)
         val aliceState = States()
-        Ratchets.ratchetInitAlice(aliceState, SK, bob.generateKey())
+        ratchets.ratchetInitAlice(
+            state = aliceState,
+            sk = aliceRk,
+            bobDhPublicKey = bobKeypair.public,
+            sharedHka = aliceHk,
+            sharedNHka = aliceNhk
+        )
 
         val bobState = States()
-        Ratchets.ratchetInitBob(bobState, SK, bob.getKeypair())
+        ratchets.ratchetInitBob(
+            state = bobState,
+            sk = bobRk,
+            bobKeypair = bobKeypair,
+            sharedHka = bobHk,
+            sharedNHka = bobNhk
+        )
 
         val originalText = SecureRandom.getSeed(32);
-        val (header, aliceCipherText) = Ratchets.ratchetEncrypt(aliceState, originalText,
-            bob.generateKey())
 
-        var header1: Headers? = null
-        var aliceCipherText1: ByteArray? = null
-        for(i in 1..10) {
-            val (header, aliceCipherText) = Ratchets.ratchetEncrypt(aliceState, originalText,
-                bob.generateKey())
-            header1 = header
-            aliceCipherText1 = aliceCipherText
+        val ad = "RatchetsTest".encodeToByteArray().sha256()
+        var ratchetPayload = ratchets.ratchetEncrypt(
+            state = aliceState,
+            plaintext = originalText,
+            ad = ad
+        )
+
+        var plaintext = ratchets.ratchetDecrypt(
+            state = bobState,
+            encHeader = ratchetPayload.header,
+            cipherText = ratchetPayload.cipherText,
+            ad = ad
+        )
+
+        assertArrayEquals(originalText, plaintext)
+
+        ratchetPayload = ratchets.ratchetEncrypt(
+            state = bobState,
+            plaintext = originalText,
+            ad = ad
+        )
+
+        plaintext = ratchets.ratchetDecrypt(
+            state = aliceState,
+            encHeader = ratchetPayload.header,
+            cipherText = ratchetPayload.cipherText,
+            ad = ad
+        )
+
+        assertArrayEquals(originalText, plaintext)
+    }
+
+    @Test
+    fun completeRatchetOutOfOrderTest() {
+        val ratchets = RatchetsHE(context)
+        val aliceState = States()
+        ratchets.ratchetInitAlice(
+            state = aliceState,
+            sk = aliceRk,
+            bobDhPublicKey = bobKeypair.public,
+            sharedHka = aliceHk,
+            sharedNHka = aliceNhk
+        )
+
+        val bobState = States()
+        ratchets.ratchetInitBob(
+            state = bobState,
+            sk = bobRk,
+            bobKeypair = bobKeypair,
+            sharedHka = bobHk,
+            sharedNHka = bobNhk
+        )
+
+        val originalText = SecureRandom.getSeed(32);
+
+        val ad = "RatchetsTest".encodeToByteArray().sha256()
+        var ratchetPayload = ratchets.ratchetEncrypt(
+            state = aliceState,
+            plaintext = originalText,
+            ad = ad
+        )
+        for(i in 1..5) {
+            ratchetPayload = ratchets.ratchetEncrypt(
+                state = aliceState,
+                plaintext = originalText,
+                ad = ad
+            )
         }
 
-        val bobPlainText = Ratchets.ratchetDecrypt(bobState, header, aliceCipherText,
-            bob.generateKey())
+        val plaintext = ratchets.ratchetDecrypt(
+            state = bobState,
+            encHeader = ratchetPayload.header,
+            cipherText = ratchetPayload.cipherText,
+            ad = ad
+        )
 
-        val bobPlainText1 = Ratchets.ratchetDecrypt(bobState, header1, aliceCipherText1,
-            bob.generateKey())
-        println(bobState.serialize())
-
-        assertArrayEquals(originalText, bobPlainText)
-        assertArrayEquals(originalText, bobPlainText1)
+        assertArrayEquals(originalText, plaintext)
     }
 }
 

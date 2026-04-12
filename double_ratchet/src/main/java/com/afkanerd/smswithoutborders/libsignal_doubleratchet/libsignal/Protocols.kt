@@ -30,6 +30,8 @@ import java.security.Security
  */
 open class Protocols(private val context: Context) {
 
+    private val MAC_LEN = 64
+
     init {
         Security.removeProvider("BC")
         Security.addProvider(BouncyCastleProvider())
@@ -127,19 +129,19 @@ open class Protocols(private val context: Context) {
             len = len,
         ).run {
             val authKey = this.sliceArray(32 until 64)
-            val cipherText = cipherText.dropLast(32).toByteArray()
+            val plaintextCiphertext = cipherText.dropLast(MAC_LEN).toByteArray()
 
             val mac = hmac(authKey)
-            mac.update(ad + cipherText)
+            mac.update(ad + plaintextCiphertext)
 
-            val incomingMac = cipherText.takeLast(32).toByteArray()
+            val incomingMac = cipherText.takeLast(MAC_LEN).toByteArray()
             if(!incomingMac.contentEquals(mac.doFinal())) {
                 throw Exception("Message failed authentication")
             }
 
             val key = this.sliceArray(0 until 32)
             val iv = this.sliceArray(64 until 80)
-            SecurityAES.decryptAES256CBC(cipherText, key, iv)
+            SecurityAES.decryptAES256CBC(plaintextCiphertext, key, iv)
         }
     }
 
@@ -152,19 +154,19 @@ open class Protocols(private val context: Context) {
             len = len,
         ).run {
             val authKey = this.sliceArray(32 until 64)
-            val cipherText = cipherText.dropLast(32).toByteArray()
-
             val mac = hmac(authKey)
-            mac.update(cipherText)
 
-            val incomingMac = cipherText.takeLast(32).toByteArray()
+            val plainCiphertext = cipherText.dropLast(MAC_LEN).toByteArray()
+            mac.update(plainCiphertext)
+
+            val incomingMac = cipherText.takeLast(MAC_LEN).toByteArray()
             if(!incomingMac.contentEquals(mac.doFinal())) {
                 throw Exception("Message failed authentication")
             }
 
             val key = this.sliceArray(0 until 32)
             val iv = this.sliceArray(64 until 80)
-            SecurityAES.decryptAES256CBC(cipherText, key, iv)
+            SecurityAES.decryptAES256CBC(plainCiphertext, key, iv)
         }
     }
 

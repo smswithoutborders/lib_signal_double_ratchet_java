@@ -55,11 +55,11 @@ class RatchetsHE(context: Context) : Protocols(context){
     fun ratchetInitBob(
         state: States,
         sk: ByteArray,
-        bobDhPublicKeypair: AsymmetricCipherKeyPair,
+        bobKeypair: AsymmetricCipherKeyPair,
         sharedHka: ByteArray,
         sharedNHka: ByteArray,
     ) {
-        state.DHRs = bobDhPublicKeypair
+        state.DHRs = bobKeypair
         state.DHRr = null
         state.RK = sk
         state.CKs = null

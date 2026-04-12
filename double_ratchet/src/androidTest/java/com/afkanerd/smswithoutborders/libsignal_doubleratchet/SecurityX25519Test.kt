@@ -1,8 +1,11 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet
 
+import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry
+import com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal.Protocols
 import org.junit.Assert.assertArrayEquals
 import org.junit.Test
 import java.security.KeyPairGenerator
@@ -11,6 +14,9 @@ import java.security.Signature
 
 @SmallTest
 class SecurityX25519Test {
+
+    var context: Context = InstrumentationRegistry.getInstrumentation().targetContext
+
     @Test
     fun keystoreEd25519() {
         val keystoreAlias = "keystoreAlias"
@@ -48,14 +54,12 @@ class SecurityX25519Test {
 
     @Test
     fun sharedSecret() {
-        val alice = SecurityCurve25519()
-        val bob = SecurityCurve25519()
+        val protocols = Protocols(context)
+        val alice = protocols.generateDH()
+        val bob = protocols.generateDH()
 
-        val alicePubKey = alice.generateKey()
-        val bobPubKey = bob.generateKey()
-
-        val aliceSharedSecret = alice.calculateSharedSecret(bobPubKey)
-        val bobSharedSecret = bob.calculateSharedSecret(alicePubKey)
+        val aliceSharedSecret = protocols.dh(alice, bob.public)
+        val bobSharedSecret = protocols.dh(bob, alice.public)
 
         assertArrayEquals(aliceSharedSecret, bobSharedSecret)
     }

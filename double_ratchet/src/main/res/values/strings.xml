@@ -6,4 +6,5 @@
     <string name="dr_nonce_info">RelaySMS C2S DR v1</string>
     <string name="dr_rk_info">RelaySMS DRHE v2</string>
     <string name="dr_encrypt_info">RelaySMS DR_ENCRYPTION v2</string>
+    <string name="dr_protocol_salt">RelaySMS_NK_handshake_v1</string>
 </resources>
