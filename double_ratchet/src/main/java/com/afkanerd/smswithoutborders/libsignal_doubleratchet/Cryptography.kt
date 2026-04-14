@@ -1,6 +1,7 @@
 package com.afkanerd.smswithoutborders.libsignal_doubleratchet
 
 import android.content.Context
+import androidx.datastore.core.Closeable
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoUtils.hkdf
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoUtils.sha256
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.libsignal.Protocols
@@ -16,6 +17,34 @@ import javax.crypto.spec.SecretKeySpec
 
 object Cryptography {
 
+    data class NoiseNKKeys(
+        val rk: ByteArray,
+        val hk: ByteArray,
+        val nhk: ByteArray,
+    ): Closeable {
+        private var zeroed = false
+
+        override fun close() {
+            if(!zeroed) {
+                rk.fill(0)
+                hk.fill(0)
+                nhk.fill(0)
+                zeroed = true
+            }
+        }
+
+        inline fun <T> use(block: (NoiseNKKeys) -> T): T {
+            try {
+                return block(this)
+            } finally {
+                close()
+            }
+        }
+
+        // Prevent accidental logging/serialization of key material
+        override fun toString() = "NoiseNKKeys([REDACTED])"
+    }
+
     fun generateKeysNK(
         context: Context,
         ephemeralKeyPair: AsymmetricCipherKeyPair,
@@ -23,7 +52,7 @@ object Cryptography {
         ephemeralPublicKey: CipherParameters,
         salt: ByteArray,
         info: ByteArray,
-    ): Triple<ByteArray, ByteArray, ByteArray> {
+    ): NoiseNKKeys {
         val protocols = Protocols(context)
 
         val dh1 = protocols.dh(ephemeralKeyPair, authenticationPublicKey)
@@ -36,7 +65,7 @@ object Cryptography {
             hkdf1 = hkdf(ikm = dh1, salt = salt, info = info, len = 32)
             hkdf2 = hkdf(ikm = dh2, salt = hkdf1, info = info, len = 96)
 
-            return Triple(
+            return NoiseNKKeys(
                 hkdf2.sliceArray(0 until 32),
                 hkdf2.sliceArray(32 until 64),
                 hkdf2.sliceArray(64 until 96),
@@ -82,10 +111,35 @@ object Cryptography {
         }
     }
 
-    data class NoiseIKKey(
-        val keys: Triple<ByteArray, ByteArray, ByteArray>,
+    data class NoiseIKKeys(
+        val rk: ByteArray,
+        val hk: ByteArray,
+        val nhk: ByteArray,
         val h: ByteArray
-    )
+    ): Closeable {
+        private var zeroed = false
+
+        override fun close() {
+            if(!zeroed) {
+                rk.fill(0)
+                hk.fill(0)
+                nhk.fill(0)
+                h.fill(0)
+                zeroed = true
+            }
+        }
+
+        inline fun <T> use(block: (NoiseIKKeys) -> T): T {
+            try {
+                return block(this)
+            } finally {
+                close()
+            }
+        }
+
+        // Prevent accidental logging/serialization of key material
+        override fun toString() = "NoiseIKKeys([REDACTED])"
+    }
 
     fun generateKeysIK(
         context: Context,
@@ -94,7 +148,7 @@ object Cryptography {
         staticKeyPair: AsymmetricCipherKeyPair,
         info: ByteArray,
         headerInfo: ByteArray,
-    ) : NoiseIKKey {
+    ) : NoiseIKKeys {
         val protocols = Protocols(context)
 
         var h = "Noise_IK_25519_AESGCM_SHA256".encodeToByteArray().sha256()
@@ -140,12 +194,10 @@ object Cryptography {
 
             hkdf3 = hkdf(ikm = dhSs, salt = ck, info = headerInfo, len = 3)
 
-            return NoiseIKKey(
-                Triple(
-                    hkdf3.sliceArray(0 until 32),
-                    hkdf3.sliceArray(32 until 64),
-                    hkdf3.sliceArray(64 until 96),
-                ),
+            return NoiseIKKeys(
+                hkdf3.sliceArray(0 until 32),
+                hkdf3.sliceArray(32 until 64),
+                hkdf3.sliceArray(64 until 96),
                 h
             )
         } finally {
@@ -172,7 +224,7 @@ object Cryptography {
         authenticationPublicKey: CipherParameters,
         info: ByteArray,
         headerInfo: ByteArray,
-    ) : NoiseIKKey {
+    ) : NoiseIKKeys {
         val protocols = Protocols(context)
 
         // Shadowed vars — use local mutable copies so we can zero them
@@ -223,12 +275,10 @@ object Cryptography {
                 len = 3
             )
 
-            return NoiseIKKey(
-                Triple(
-                    hkdf3.sliceArray(0 until 32),
-                    hkdf3.sliceArray(32 until 64),
-                    hkdf3.sliceArray(64 until 96),
-                ),
+            return NoiseIKKeys(
+                hkdf3.sliceArray(0 until 32),
+                hkdf3.sliceArray(32 until 64),
+                hkdf3.sliceArray(64 until 96),
                 localH
             )
         } finally {

@@ -80,14 +80,19 @@ class RatchetsHE(context: Context) : Protocols(context){
         ad: ByteArray,
     ) : RatchetPayload {
         val (ck, mk) = kdfCk(state.CKs)
-        state.CKs = ck
-        val header = Headers(state.DHRs!!, state.PN, state.Ns)
-        val encHeader = hEncrypt(state.HKs!!, header.serialized)
-        state.Ns++
-        return RatchetPayload(
-            header = encHeader,
-            cipherText = encrypt(mk, plaintext, concat(ad, encHeader))
-        )
+        try {
+            state.CKs = ck
+            val header = Headers(state.DHRs!!, state.PN, state.Ns)
+            val encHeader = hEncrypt(state.HKs!!, header.serialized)
+            state.Ns++
+            return RatchetPayload(
+                header = encHeader,
+                cipherText = encrypt(mk, plaintext, concat(ad, encHeader))
+            )
+        } finally {
+            ck.fill(0)
+            mk.fill(0)
+        }
     }
 
     fun ratchetDecrypt(
@@ -107,11 +112,16 @@ class RatchetsHE(context: Context) : Protocols(context){
         }
 
         skipMessageKeys(state, header.n.toInt())
-        val kdfCk = kdfCk(state.CKr)
-        state.CKr = kdfCk.first
-        val mk = kdfCk.second
-        state.Nr++
-        return decrypt(mk, cipherText, concat(ad, encHeader))
+
+        val (ck, mk) = kdfCk(state.CKr)
+        try {
+            state.CKr = ck
+            state.Nr++
+            return decrypt(mk, cipherText, concat(ad, encHeader))
+        } finally {
+            ck.fill(0)
+            mk.fill(0)
+        }
     }
 
     private fun skipMessageKeys(
@@ -123,11 +133,16 @@ class RatchetsHE(context: Context) : Protocols(context){
 
         state.CKr?.let{
             while(state.Nr.toInt() < until) {
-                val kdfCk = kdfCk(state.CKr)
-                state.CKr = kdfCk.first
-                val mk = kdfCk.second
-                state.MKSKIPPED[Pair(state.HKr, state.Nr.toInt())] = mk
-                state.Nr++
+                val (ck, mk) = kdfCk(state.CKr)
+                try {
+                    state.CKr = ck
+                    val mk = mk
+                    state.MKSKIPPED[Pair(state.HKr, state.Nr.toInt())] = mk
+                    state.Nr++
+                } finally {
+                    ck.fill(0)
+                    mk.fill(0)
+                }
             }
         }
     }
@@ -142,12 +157,17 @@ class RatchetsHE(context: Context) : Protocols(context){
             val (hk, n) = it.key
             val mk = it.value
 
-            val header = hDecrypt(hk, encHeader).run {
-                Headers.deserialize(this)
-            }
-            if(header.n.toInt() == n) {
-                state.MKSKIPPED.remove(it.key)
-                return decrypt(mk, ciphertext, concat(ad, encHeader))
+            try {
+                val header = hDecrypt(hk, encHeader).run {
+                    Headers.deserialize(this)
+                }
+                if(header.n.toInt() == n) {
+                    state.MKSKIPPED.remove(it.key)
+                    return decrypt(mk, ciphertext, concat(ad, encHeader))
+                }
+            } finally {
+                hk.fill(0)
+                mk.fill(0)
             }
         }
 
@@ -186,28 +206,38 @@ class RatchetsHE(context: Context) : Protocols(context){
         state.HKr = state.NHKr
         state.DHRr = header.dh.public
 
-        kdfRk(state.RK!!,
+        val (rk, ck, nhk) = kdfRk(state.RK!!,
             dh(
                 state.DHRs!!,
                 state.DHRr!!,
             )
-        ).let {
-            state.RK = it.first
-            state.CKr = it.second
-            state.NHKr = it.third
+        )
+        try {
+            state.RK = rk.copyOf()
+            state.CKr = ck.copyOf()
+            state.NHKr = nhk.copyOf()
+        } finally {
+            rk.fill(0)
+            ck.fill(0)
+            nhk.fill(0)
         }
 
         state.DHRs = generateDH()
 
-        kdfRk(state.RK!!,
+        val (rk1, ck1, nhk1) = kdfRk(state.RK!!,
             dh(
                 state.DHRs!!,
                 state.DHRr!!,
             )
-        ).let {
-            state.RK = it.first
-            state.CKs = it.second
-            state.NHKs = it.third
+        )
+        try {
+            state.RK = rk1.copyOf()
+            state.CKs = ck1.copyOf()
+            state.NHKs = nhk1.copyOf()
+        } finally {
+            rk1.fill(0)
+            ck1.fill(0)
+            nhk1.fill(0)
         }
     }
 }
