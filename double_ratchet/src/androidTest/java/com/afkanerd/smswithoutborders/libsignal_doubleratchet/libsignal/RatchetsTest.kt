@@ -5,6 +5,7 @@ import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoUtils
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoUtils.sha256
+import com.afkanerd.smswithoutborders.libsignal_doubleratchet.Cryptography
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.extensions.generateRandomBytes
 import org.bouncycastle.crypto.params.X25519PublicKeyParameters
 import org.junit.Assert.assertArrayEquals
@@ -38,7 +39,7 @@ class RatchetsTest {
 
     @Before
     fun start() {
-        CryptoUtils.generateKeysNK(
+        Cryptography.generateKeysNK(
             context = context,
             ephemeralKeyPair = aliceKeypair,
             authenticationPublicKey = bobStaticKeypair.public,
@@ -51,7 +52,7 @@ class RatchetsTest {
             aliceNhk = it.third
         }
 
-        CryptoUtils.generateKeysNKServer(
+        Cryptography.generateKeysNKServer(
             context = context,
             authenticationKeypair = bobStaticKeypair,
             ephemeralKeyPair = bobKeypair,
