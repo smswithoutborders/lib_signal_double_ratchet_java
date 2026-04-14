@@ -115,7 +115,8 @@ object Cryptography {
         val rk: ByteArray,
         val hk: ByteArray,
         val nhk: ByteArray,
-        val h: ByteArray
+        val ck: ByteArray? = null,
+        val h: ByteArray? = null,
     ): Closeable {
         private var zeroed = false
 
@@ -124,7 +125,8 @@ object Cryptography {
                 rk.fill(0)
                 hk.fill(0)
                 nhk.fill(0)
-                h.fill(0)
+                ck?.fill(0)
+                h?.fill(0)
                 zeroed = true
             }
         }
@@ -198,6 +200,7 @@ object Cryptography {
                 hkdf3.sliceArray(0 until 32),
                 hkdf3.sliceArray(32 until 64),
                 hkdf3.sliceArray(64 until 96),
+                ck,
                 h
             )
         } finally {
@@ -279,7 +282,6 @@ object Cryptography {
                 hkdf3.sliceArray(0 until 32),
                 hkdf3.sliceArray(32 until 64),
                 hkdf3.sliceArray(64 until 96),
-                localH
             )
         } finally {
             dhEe.fill(0)
