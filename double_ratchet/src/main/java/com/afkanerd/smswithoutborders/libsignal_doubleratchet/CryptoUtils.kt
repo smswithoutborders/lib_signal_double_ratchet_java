@@ -49,29 +49,31 @@ object CryptoUtils {
         info: ByteArray,
     ): Triple<ByteArray, ByteArray, ByteArray> {
         val protocols = Protocols(context)
+
         val dh1 = protocols.dh(ephemeralKeyPair, authenticationPublicKey)
         val dh2 = protocols.dh(ephemeralKeyPair, ephemeralPublicKey)
-        return hkdf(
-            ikm = dh1,
-            salt = salt,
-            info = info,
-            len = 32,
-        ).run {
-            hkdf(
-                ikm = dh2,
-                salt = this,
-                info = info,
-                len = 96,
-            ).run {
-                Triple(
-                    this.sliceArray(0 until 32),
-                    this.sliceArray(32 until 64),
-                    this.sliceArray(64 until 96),
-                )
-            }
+
+        var hkdf1: ByteArray? = null
+        var hkdf2: ByteArray? = null
+
+        try {
+            hkdf1 = hkdf(ikm = dh1, salt = salt, info = info, len = 32)
+            hkdf2 = hkdf(ikm = dh2, salt = hkdf1, info = info, len = 96)
+
+            return Triple(
+                hkdf2.sliceArray(0 until 32),
+                hkdf2.sliceArray(32 until 64),
+                hkdf2.sliceArray(64 until 96),
+            )
+        } finally {
+            dh1.fill(0)
+            dh2.fill(0)
+            hkdf1?.fill(0)
+            hkdf2?.fill(0)
+            // The sliceArray copies inside Triple are intentionally not zeroed —
+            // they are the return value and owned by the caller
         }
     }
-
     fun generateKeysNKServer(
         context: Context,
         authenticationKeypair: AsymmetricCipherKeyPair,
@@ -83,24 +85,24 @@ object CryptoUtils {
         val protocols = Protocols(context)
         val dh1 = protocols.dh(authenticationKeypair, ephemeralPublicKey)
         val dh2 = protocols.dh(ephemeralKeyPair, ephemeralPublicKey)
-        return hkdf(
-            ikm = dh1,
-            salt = salt,
-            info = info,
-            len = 32,
-        ).run {
-            hkdf(
-                ikm = dh2,
-                salt = this,
-                info = info,
-                len = 96,
-            ).run {
-                Triple(
-                    this.sliceArray(0 until 32),
-                    this.sliceArray(32 until 64),
-                    this.sliceArray(64 until 96),
-                )
-            }
+
+        var hkdf1: ByteArray? = null
+        var hkdf2: ByteArray? = null
+
+        try {
+            hkdf1 = hkdf( ikm = dh1, salt = salt, info = info, len = 32, )
+            hkdf2 = hkdf( ikm = dh2, salt = hkdf1, info = info, len = 96, )
+
+            return Triple(
+                hkdf2.sliceArray(0 until 32),
+                hkdf2.sliceArray(32 until 64),
+                hkdf2.sliceArray(64 until 96),
+            )
+        } finally {
+            dh1.fill(0)
+            dh2.fill(0)
+            hkdf1?.fill(0)
+            hkdf2?.fill(0)
         }
     }
 
