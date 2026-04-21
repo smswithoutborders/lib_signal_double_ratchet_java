@@ -48,8 +48,8 @@ object Cryptography {
     fun generateKeysNK(
         context: Context,
         ephemeralKeyPair: Protocols.CloseableCurve15519KeyPair,
-        authenticationPublicKey: CipherParameters,
-        ephemeralPublicKey: CipherParameters,
+        authenticationPublicKey: ByteArray,
+        ephemeralPublicKey: ByteArray,
         salt: ByteArray,
         info: ByteArray,
     ): NoiseNKKeys {
@@ -83,7 +83,7 @@ object Cryptography {
         context: Context,
         authenticationKeypair: Protocols.CloseableCurve15519KeyPair,
         ephemeralKeyPair: Protocols.CloseableCurve15519KeyPair,
-        ephemeralPublicKey: CipherParameters,
+        ephemeralPublicKey: ByteArray,
         salt: ByteArray,
         info: ByteArray,
     ): Triple<ByteArray, ByteArray, ByteArray> {
@@ -146,7 +146,7 @@ object Cryptography {
     fun generateKeysIK(
         context: Context,
         ephemeralKeyPair: Protocols.CloseableCurve15519KeyPair,
-        authenticationPublicKey: CipherParameters,
+        authenticationPublicKey: ByteArray,
         staticKeyPair: Protocols.CloseableCurve15519KeyPair,
         info: ByteArray,
         headerInfo: ByteArray,
@@ -223,8 +223,8 @@ object Cryptography {
         h: ByteArray,
         ck: ByteArray,
         ephemeralKeyPair: Protocols.CloseableCurve15519KeyPair,
-        ephemeralResponderPublicKey: CipherParameters,
-        authenticationPublicKey: CipherParameters,
+        ephemeralResponderPublicKey: ByteArray,
+        authenticationPublicKey: ByteArray,
         info: ByteArray,
         headerInfo: ByteArray,
     ) : NoiseIKKeys {
@@ -232,7 +232,7 @@ object Cryptography {
 
         // Shadowed vars — use local mutable copies so we can zero them
         // Note: the incoming h and ck are owned by the caller; don't zero them here
-        var localH = (h + (ephemeralResponderPublicKey as X25519PublicKeyParameters).encoded).sha256()
+        var localH = h + ephemeralResponderPublicKey.sha256()
         var localCk = ck.copyOf() // defensive copy — we'll mutate and zero this
 
         val dhEe = protocols.dh(ephemeralKeyPair, ephemeralResponderPublicKey)

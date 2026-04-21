@@ -27,7 +27,7 @@ class RatchetsHE(context: Context) : Protocols(context){
     fun ratchetInitAlice(
         state: States,
         sk: ByteArray,
-        bobDhPublicKey: CipherParameters,
+        bobDhPublicKey: ByteArray,
         sharedHka: ByteArray,
         sharedNHka: ByteArray,
     ) {
@@ -204,7 +204,7 @@ class RatchetsHE(context: Context) : Protocols(context){
         state.Nr = 0u
         state.HKs = state.NHKs
         state.HKr = state.NHKr
-        state.DHRr = X25519PublicKeyParameters(header.dh.publicKey)
+        state.DHRr = header.dh.publicKey
 
         val (rk, ck, nhk) = kdfRk(state.RK!!,
             dh(

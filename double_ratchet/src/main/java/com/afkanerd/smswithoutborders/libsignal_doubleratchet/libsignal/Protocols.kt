@@ -57,7 +57,7 @@ open class Protocols(private val context: Context) {
         override fun close() {
             if(isClosed) return
             publicKey.fill(0)
-            privateKey?.fill(0)
+            privateKey?.let{ it.fill(0); privateKey = null}
             isClosed = true
         }
 
@@ -80,12 +80,16 @@ open class Protocols(private val context: Context) {
         }
     }
 
-    fun dh(keypair: CloseableCurve15519KeyPair, publicKey: CipherParameters): ByteArray {
+    fun dh(keypair: CloseableCurve15519KeyPair, publicKey: ByteArray): ByteArray {
         val sharedSecret = ByteArray(32)
         val agreement = X25519Agreement()
         keypair.use { kp ->
             agreement.init(X25519PrivateKeyParameters(kp.privateKey, 0))
-            agreement.calculateAgreement(publicKey, sharedSecret, 0)
+            agreement.calculateAgreement(
+                X25519PublicKeyParameters(publicKey),
+                sharedSecret,
+                0
+            )
         }
         return sharedSecret
     }

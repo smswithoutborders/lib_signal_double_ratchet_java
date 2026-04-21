@@ -26,7 +26,7 @@ data class States(
     var Nr: UByte = 0u,
     var PN: UByte = 0u,
     var DHRs: Protocols.CloseableCurve15519KeyPair? = null,
-    var DHRr: CipherParameters? = null,
+    var DHRr: ByteArray? = null,
     var HKs: ByteArray? = null,
     var HKr: ByteArray? = null,
     var NHKs: ByteArray? = null,
@@ -51,8 +51,7 @@ data class States(
         NHKs?.let { it.fill(0); NHKs = null }
         NHKr?.let { it.fill(0); NHKr = null }
 
-        (DHRr as? Ed25519PublicKeyParameters)?.encoded?.fill(0)
-        DHRr = null
+        DHRr?.let { it.fill(0); DHRr = null }
 
         val iterator = MKSKIPPED.entries.iterator()
         while (iterator.hasNext()) {
