@@ -25,17 +25,17 @@ class RatchetsTest {
 
     val salt = "completeRatchetTest_v1".encodeToByteArray()
     val info = context.generateRandomBytes(16) +
-            (aliceKeypair.public as X25519PublicKeyParameters).encoded +
-            (bobKeypair.public as X25519PublicKeyParameters).encoded +
-            (bobStaticKeypair.public as X25519PublicKeyParameters).encoded
+            aliceKeypair.publicKey +
+            bobKeypair.publicKey +
+            bobStaticKeypair.publicKey
 
     @Test
     fun completeRatchetTest() {
         Cryptography.generateKeysNK(
             context = context,
             ephemeralKeyPair = aliceKeypair,
-            authenticationPublicKey = bobStaticKeypair.public,
-            ephemeralPublicKey = bobKeypair.public,
+            authenticationPublicKey = X25519PublicKeyParameters(bobStaticKeypair.publicKey),
+            ephemeralPublicKey = X25519PublicKeyParameters(bobKeypair.publicKey),
             salt = salt,
             info = info
         ).use { alice ->
@@ -43,7 +43,7 @@ class RatchetsTest {
                 context = context,
                 authenticationKeypair = bobStaticKeypair,
                 ephemeralKeyPair = bobKeypair,
-                ephemeralPublicKey = aliceKeypair.public,
+                ephemeralPublicKey = X25519PublicKeyParameters(aliceKeypair.publicKey),
                 salt = salt,
                 info = info
             ).let { bob ->
@@ -56,7 +56,7 @@ class RatchetsTest {
                 ratchets.ratchetInitAlice(
                     state = aliceState,
                     sk = alice.rk,
-                    bobDhPublicKey = bobKeypair.public,
+                    bobDhPublicKey = X25519PublicKeyParameters(bobKeypair.publicKey),
                     sharedHka = alice.hk,
                     sharedNHka = alice.nhk
                 )
@@ -114,8 +114,8 @@ class RatchetsTest {
         Cryptography.generateKeysNK(
             context = context,
             ephemeralKeyPair = aliceKeypair,
-            authenticationPublicKey = bobStaticKeypair.public,
-            ephemeralPublicKey = bobKeypair.public,
+            authenticationPublicKey = X25519PublicKeyParameters(bobStaticKeypair.publicKey),
+            ephemeralPublicKey = X25519PublicKeyParameters(bobKeypair.publicKey),
             salt = salt,
             info = info
         ).use { alice ->
@@ -123,7 +123,7 @@ class RatchetsTest {
                 context = context,
                 authenticationKeypair = bobStaticKeypair,
                 ephemeralKeyPair = bobKeypair,
-                ephemeralPublicKey = aliceKeypair.public,
+                ephemeralPublicKey = X25519PublicKeyParameters(aliceKeypair.publicKey),
                 salt = salt,
                 info = info
             ).let { bob ->
@@ -136,7 +136,7 @@ class RatchetsTest {
                 ratchets.ratchetInitAlice(
                     state = aliceState,
                     sk = alice.rk,
-                    bobDhPublicKey = bobKeypair.public,
+                    bobDhPublicKey = X25519PublicKeyParameters(bobKeypair.publicKey),
                     sharedHka = alice.hk,
                     sharedNHka = alice.nhk
                 )

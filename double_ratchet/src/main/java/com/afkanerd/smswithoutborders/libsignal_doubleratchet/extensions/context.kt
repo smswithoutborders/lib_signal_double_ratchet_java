@@ -8,8 +8,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityAES
-import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityRSA
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.first
 import java.io.IOException
@@ -24,45 +22,6 @@ import java.security.cert.CertificateException
 import javax.crypto.spec.SecretKeySpec
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "secure_comms")
-
-/**
- * Pair<PublicKey, PrivateKey>
- */
-suspend fun Context.getKeypairValues(address: String): Pair<ByteArray?, ByteArray?> {
-    val keyValue = stringSetPreferencesKey(address + "_keypair")
-    val keypairSet = dataStore.data.first()[keyValue]
-    val encryptionPublicKey = getKeypairFromKeystore(address)
-
-    val publicKey = SecurityRSA.decrypt(
-        encryptionPublicKey?.private,
-        Base64.decode(keypairSet?.elementAt(0), Base64.DEFAULT)
-    )
-    val privateKey = SecurityRSA.decrypt(
-        encryptionPublicKey?.private,
-        Base64.decode(keypairSet?.elementAt(1), Base64.DEFAULT)
-    )
-    return Pair(publicKey, privateKey)
-}
-
-suspend fun Context.setKeypairValues(
-    address: String,
-    publicKey: ByteArray,
-    privateKey: ByteArray,
-) {
-    val encryptionPublicKey = SecurityRSA.generateKeyPair(address)
-
-    val keyValue = stringSetPreferencesKey(address + "_keypair")
-    dataStore.edit { secureComms->
-        secureComms[keyValue] = setOf(
-            Base64.encodeToString(publicKey.run {
-                SecurityRSA.encrypt(encryptionPublicKey, this)
-            }, Base64.DEFAULT),
-            Base64.encodeToString(privateKey.run {
-                SecurityRSA.encrypt(encryptionPublicKey, this)
-            }, Base64.DEFAULT),
-        )
-    }
-}
 
 @Throws(
     KeyStoreException::class,
@@ -93,59 +52,6 @@ data class SavedBinaryData(
 /**
  *  Would overwrite anything with the same Keystore Alias
  */
-@Throws
-suspend fun Context.saveBinaryDataEncrypted(
-    keystoreAlias: String,
-    data: ByteArray,
-) : Boolean {
-    val keyValue = stringPreferencesKey(keystoreAlias)
-
-    val aesGcmKey = SecurityAES.generateSecretKey(256)
-    val data = SecurityAES.encryptAESGCM(data, aesGcmKey)
-
-//    val encryptionPublicKey = getKeypairFromKeystore(keystoreAlias)?.public
-//        ?: SecurityRSA.generateKeyPair(keystoreAlias)
-
-    var saved = false
-    dataStore.edit { secureComms->
-        try {
-            val encryptionPublicKey = SecurityRSA.generateKeyPair(keystoreAlias)
-            SecurityRSA.encrypt(encryptionPublicKey, aesGcmKey.encoded)?.let { key ->
-                secureComms[keyValue] = Gson().toJson(
-                    SavedBinaryData(
-                        key = key,
-                        algorithm = aesGcmKey.algorithm,
-                        data = data
-                    )
-                )
-                saved = true
-            }
-        } catch(e: Exception) {
-            throw e
-        }
-    }
-    return saved
-}
-
-@Throws
-suspend fun Context.getEncryptedBinaryData(keystoreAlias: String): ByteArray? {
-    val keyValue = stringPreferencesKey(keystoreAlias)
-    val data = dataStore.data.first()[keyValue] ?: return null
-
-    val savedBinaryData = Gson().fromJson(data, SavedBinaryData::class.java)
-
-    return try {
-        val encryptionPublicKey = getKeypairFromKeystore(keystoreAlias)
-        SecurityRSA.decrypt(encryptionPublicKey?.private, savedBinaryData.key)
-            ?.run {
-                SecurityAES.decryptAESGCM(savedBinaryData.data,
-                    SecretKeySpec(this, savedBinaryData.algorithm)
-                )
-            }
-    } catch(e: Exception) {
-        throw e
-    }
-}
 
 fun Context.generateRandomBytes(length: Int): ByteArray {
     val random = SecureRandom()

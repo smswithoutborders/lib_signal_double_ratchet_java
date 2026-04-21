@@ -47,7 +47,7 @@ object Cryptography {
 
     fun generateKeysNK(
         context: Context,
-        ephemeralKeyPair: AsymmetricCipherKeyPair,
+        ephemeralKeyPair: Protocols.CloseableCurve15519KeyPair,
         authenticationPublicKey: CipherParameters,
         ephemeralPublicKey: CipherParameters,
         salt: ByteArray,
@@ -81,8 +81,8 @@ object Cryptography {
     }
     fun generateKeysNKServer(
         context: Context,
-        authenticationKeypair: AsymmetricCipherKeyPair,
-        ephemeralKeyPair: AsymmetricCipherKeyPair,
+        authenticationKeypair: Protocols.CloseableCurve15519KeyPair,
+        ephemeralKeyPair: Protocols.CloseableCurve15519KeyPair,
         ephemeralPublicKey: CipherParameters,
         salt: ByteArray,
         info: ByteArray,
@@ -145,9 +145,9 @@ object Cryptography {
 
     fun generateKeysIK(
         context: Context,
-        ephemeralKeyPair: AsymmetricCipherKeyPair,
+        ephemeralKeyPair: Protocols.CloseableCurve15519KeyPair,
         authenticationPublicKey: CipherParameters,
-        staticKeyPair: AsymmetricCipherKeyPair,
+        staticKeyPair: Protocols.CloseableCurve15519KeyPair,
         info: ByteArray,
         headerInfo: ByteArray,
     ) : NoiseIKKeys {
@@ -157,7 +157,7 @@ object Cryptography {
         var ck = h
 
         h = (h + (authenticationPublicKey as X25519PublicKeyParameters).encoded).sha256()
-        h = (h + (ephemeralKeyPair.public as X25519PublicKeyParameters).encoded).sha256()
+        h = (h + ephemeralKeyPair.publicKey).sha256()
 
         val dhEs = protocols.dh(ephemeralKeyPair, authenticationPublicKey)
         val dhSs = protocols.dh(staticKeyPair, authenticationPublicKey)
@@ -175,9 +175,9 @@ object Cryptography {
             ck = hkdf1.sliceArray(0 until 32)
             k = hkdf1.sliceArray(32 until 64)
 
-            csPkEnc = Cryptography.AesGcm.encrypt(
+            csPkEnc = AesGcm.encrypt(
                 SecretKeySpec(k, "AES"),
-                (staticKeyPair.public as X25519PublicKeyParameters).encoded,
+                staticKeyPair.publicKey,
                 h
             )
             h = (h + csPkEnc).sha256()
@@ -222,7 +222,7 @@ object Cryptography {
         context: Context,
         h: ByteArray,
         ck: ByteArray,
-        ephemeralKeyPair: AsymmetricCipherKeyPair,
+        ephemeralKeyPair: Protocols.CloseableCurve15519KeyPair,
         ephemeralResponderPublicKey: CipherParameters,
         authenticationPublicKey: CipherParameters,
         info: ByteArray,
@@ -251,7 +251,7 @@ object Cryptography {
             localCk = hkdf1.sliceArray(0 until 32)
             k = hkdf1.sliceArray(32 until 64)
 
-            ciphertext1 = Cryptography.AesGcm.encrypt(
+            ciphertext1 = AesGcm.encrypt(
                 SecretKeySpec(k, "AES"),
                 "".encodeToByteArray(),
                 localH
@@ -264,7 +264,7 @@ object Cryptography {
             k.fill(0) // zero previous k before reassign
             k = hkdf2.sliceArray(32 until 64)
 
-            ciphertext2 = Cryptography.AesGcm.encrypt(
+            ciphertext2 = AesGcm.encrypt(
                 SecretKeySpec(k, "AES"),
                 "".encodeToByteArray(),
                 localH
@@ -282,6 +282,7 @@ object Cryptography {
                 hkdf3.sliceArray(0 until 32),
                 hkdf3.sliceArray(32 until 64),
                 hkdf3.sliceArray(64 until 96),
+                h = localH
             )
         } finally {
             dhEe.fill(0)
@@ -309,11 +310,6 @@ object Cryptography {
             val iv: ByteArray           // IV — must be stored alongside ciphertext for decryption
         )
 
-        fun generateKey(): SecretKey {
-            val keygen = KeyGenerator.getInstance("AES")
-            keygen.init(KEY_SIZE_BITS, SecureRandom())
-            return keygen.generateKey()
-        }
 
         /**
          * Encrypts [plaintext] with AES-256-GCM.
@@ -327,17 +323,18 @@ object Cryptography {
         fun encrypt(
             key: SecretKey,
             plaintext: ByteArray,
+            iv: ByteArray? = null,
             associatedData: ByteArray? = null
         ): ByteArray {
-            val iv = ByteArray(IV_SIZE_BYTES).also { SecureRandom().nextBytes(it) }
-            val spec = GCMParameterSpec(TAG_SIZE_BITS, iv)
+            val iv1 = iv ?: ByteArray(IV_SIZE_BYTES).also { SecureRandom().nextBytes(it) }
+            val spec = GCMParameterSpec(TAG_SIZE_BITS, iv1)
 
             val cipher = Cipher.getInstance(ALGORITHM)
             cipher.init(Cipher.ENCRYPT_MODE, key, spec)
             associatedData?.let { cipher.updateAAD(it) }
 
             val ciphertext = cipher.doFinal(plaintext)
-            return iv + ciphertext
+            return if(iv != null) ciphertext else iv1 + ciphertext
         }
 
         /**

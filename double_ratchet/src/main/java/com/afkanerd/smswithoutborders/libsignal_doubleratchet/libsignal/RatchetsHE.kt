@@ -55,7 +55,7 @@ class RatchetsHE(context: Context) : Protocols(context){
     fun ratchetInitBob(
         state: States,
         sk: ByteArray,
-        bobKeypair: AsymmetricCipherKeyPair,
+        bobKeypair: CloseableCurve15519KeyPair,
         sharedHka: ByteArray,
         sharedNHka: ByteArray,
     ) {
@@ -158,10 +158,10 @@ class RatchetsHE(context: Context) : Protocols(context){
             val mk = it.value
 
             try {
-                val header = hDecrypt(hk, encHeader).run {
+                val header = hDecrypt(hk, encHeader)?.run {
                     Headers.deserialize(this)
                 }
-                if(header.n.toInt() == n) {
+                if(header != null && header.n.toInt() == n) {
                     state.MKSKIPPED.remove(it.key)
                     return decrypt(mk, ciphertext, concat(ad, encHeader))
                 }
@@ -180,7 +180,7 @@ class RatchetsHE(context: Context) : Protocols(context){
     ) : Pair<Headers, Boolean> {
         var header: Headers? = null
         try {
-            header = hDecrypt(state.HKr!!, encHeader).run {
+            header = hDecrypt(state.HKr, encHeader)?.run {
                 Headers.deserialize(this)
             }
         } catch(e: Exception) {
@@ -191,7 +191,7 @@ class RatchetsHE(context: Context) : Protocols(context){
             return Pair(header, false)
         }
 
-        header = hDecrypt(state.NHKr!!, encHeader).run {
+        header = hDecrypt(state.NHKr!!, encHeader)?.run {
             Headers.deserialize(this)
         }
 
@@ -204,7 +204,7 @@ class RatchetsHE(context: Context) : Protocols(context){
         state.Nr = 0u
         state.HKs = state.NHKs
         state.HKr = state.NHKr
-        state.DHRr = header.dh.public
+        state.DHRr = X25519PublicKeyParameters(header.dh.publicKey)
 
         val (rk, ck, nhk) = kdfRk(state.RK!!,
             dh(

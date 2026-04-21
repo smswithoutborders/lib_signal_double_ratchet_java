@@ -5,22 +5,28 @@ import android.util.Pair
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoUtils
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoUtils.hkdf
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoUtils.hmac
+import com.afkanerd.smswithoutborders.libsignal_doubleratchet.Cryptography
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.R
-import com.afkanerd.smswithoutborders.libsignal_doubleratchet.SecurityAES
 import com.google.common.primitives.Bytes
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.CipherParameters
 import org.bouncycastle.crypto.agreement.X25519Agreement
 import org.bouncycastle.crypto.generators.X25519KeyPairGenerator
 import org.bouncycastle.crypto.params.X25519KeyGenerationParameters
+import org.bouncycastle.crypto.params.X25519PrivateKeyParameters
+import org.bouncycastle.crypto.params.X25519PublicKeyParameters
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.lang.AutoCloseable
+import java.security.PrivateKey
 import java.security.SecureRandom
 import java.security.Security
+import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
 
 /**
- * This implementations are based on the signal protocols specifications.
+ * These implementations are based on the signal protocols specifications.
  * 
- * This are based on the recommended algorithms and parameters for the encryption
+ * These are based on the recommended algorithms and parameters for the encryption
  * and decryption.
  * 
  * The goal for this would be to transform it into library which can be used across
@@ -37,17 +43,50 @@ open class Protocols(private val context: Context) {
         Security.addProvider(BouncyCastleProvider())
     }
 
-    fun generateDH(): AsymmetricCipherKeyPair {
-        val generator = X25519KeyPairGenerator()
-        generator.init(X25519KeyGenerationParameters(SecureRandom()))
-        return generator.generateKeyPair()
+    data class CloseableCurve15519KeyPair(
+        var publicKey: ByteArray,
+        var privateKey: ByteArray?
+    ): AutoCloseable {
+        private var isClosed = false
+
+        fun use(block: (CloseableCurve15519KeyPair) -> Unit) {
+            if (isClosed) throw IllegalStateException("Cannot use zeroed RatchetState")
+            block(this)
+        }
+
+        override fun close() {
+            if(isClosed) return
+            publicKey.fill(0)
+            privateKey?.fill(0)
+            isClosed = true
+        }
+
     }
 
-    fun dh(keypair: AsymmetricCipherKeyPair, publicKey: CipherParameters): ByteArray {
+    fun generateDH(): CloseableCurve15519KeyPair {
+        val generator = X25519KeyPairGenerator()
+        generator.init(X25519KeyGenerationParameters(SecureRandom()))
+
+        val keypair = generator.generateKeyPair()
+        return try {
+            CloseableCurve15519KeyPair(
+                publicKey = (keypair.public as X25519PublicKeyParameters).encoded,
+                privateKey = (keypair.private as X25519PrivateKeyParameters).encoded,
+            )
+        } catch(e: Exception) {
+            e.printStackTrace()
+            (keypair.private as? X25519PrivateKeyParameters)?.encoded?.fill(0)
+            throw e
+        }
+    }
+
+    fun dh(keypair: CloseableCurve15519KeyPair, publicKey: CipherParameters): ByteArray {
         val sharedSecret = ByteArray(32)
         val agreement = X25519Agreement()
-        agreement.init(keypair.private)
-        agreement.calculateAgreement(publicKey, sharedSecret, 0)
+        keypair.use { kp ->
+            agreement.init(X25519PrivateKeyParameters(kp.privateKey, 0))
+            agreement.calculateAgreement(publicKey, sharedSecret, 0)
+        }
         return sharedSecret
     }
 
@@ -90,7 +129,11 @@ open class Protocols(private val context: Context) {
             val authKey = this.sliceArray(32 until 64)
             val iv = this.sliceArray(64 until 80)
 
-            val cipherText = SecurityAES.encryptAES256CBC(plainText, key, iv)
+            val cipherText = Cryptography.AesGcm.encrypt(
+                key = SecretKeySpec(key, "AES"),
+                iv = iv,
+                plaintext = plainText,
+            )
             val mac = hmac(authKey)
             mac.update(ad + cipherText)
             cipherText + mac.doFinal()
@@ -112,7 +155,11 @@ open class Protocols(private val context: Context) {
             val authKey = this.sliceArray(32 until 64)
             val iv = this.sliceArray(64 until 80)
 
-            val cipherText = SecurityAES.encryptAES256CBC(plainText, key, iv)
+            val cipherText = Cryptography.AesGcm.encrypt(
+                key = SecretKeySpec(key, "AES"),
+                iv = iv,
+                plaintext = plainText,
+            )
 
             val mac = hmac(authKey)
             mac.update(cipherText)
@@ -141,12 +188,18 @@ open class Protocols(private val context: Context) {
 
             val key = this.sliceArray(0 until 32)
             val iv = this.sliceArray(64 until 80)
-            SecurityAES.decryptAES256CBC(plaintextCiphertext, key, iv)
+            Cryptography.AesGcm.decrypt(
+                key = SecretKeySpec(key, "AES"),
+                ciphertext = plaintextCiphertext,
+                iv = iv,
+            )
         }
     }
 
-    fun hDecrypt(mk: ByteArray, cipherText: ByteArray): ByteArray {
+    fun hDecrypt(mk: ByteArray?, cipherText: ByteArray): ByteArray? {
         val len = 80
+        if(mk == null) return null
+
         return hkdf(
             ikm = mk,
             salt = ByteArray(len),
@@ -166,7 +219,11 @@ open class Protocols(private val context: Context) {
 
             val key = this.sliceArray(0 until 32)
             val iv = this.sliceArray(64 until 80)
-            SecurityAES.decryptAES256CBC(plainCiphertext, key, iv)
+            Cryptography.AesGcm.decrypt(
+                key = SecretKeySpec(key, "AES"),
+                ciphertext = plainCiphertext,
+                iv = iv,
+            )
         }
     }
 

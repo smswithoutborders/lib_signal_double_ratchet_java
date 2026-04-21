@@ -7,7 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.KeyPair
 
-class Headers(var dh: AsymmetricCipherKeyPair, pn: UByte, n: UByte) {
+class Headers(var dh: Protocols.CloseableCurve15519KeyPair, pn: UByte, n: UByte) {
     var pn: UByte = 0u
     var n: UByte = 0u
 
@@ -18,8 +18,7 @@ class Headers(var dh: AsymmetricCipherKeyPair, pn: UByte, n: UByte) {
 
     val serialized: ByteArray
         get() {
-            val pk = dh.public as X25519PublicKeyParameters
-            return byteArrayOf(pn.toByte()) + byteArrayOf(n.toByte()) + pk.encoded
+            return byteArrayOf(pn.toByte()) + byteArrayOf(n.toByte()) + dh.publicKey
         }
 
     companion object {
@@ -28,8 +27,8 @@ class Headers(var dh: AsymmetricCipherKeyPair, pn: UByte, n: UByte) {
             val n = header[1].toUByte()
             val pk = header.sliceArray(2 until header.size)
             return Headers(
-                AsymmetricCipherKeyPair(
-                    X25519PublicKeyParameters(pk, 0),
+                Protocols.CloseableCurve15519KeyPair(
+                    pk,
                     null
                 ), pn, n)
         }
