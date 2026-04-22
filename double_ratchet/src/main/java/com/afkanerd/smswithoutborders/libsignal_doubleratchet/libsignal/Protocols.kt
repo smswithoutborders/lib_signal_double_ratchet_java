@@ -49,11 +49,6 @@ open class Protocols(private val context: Context) {
     ): AutoCloseable {
         private var isClosed = false
 
-        fun use(block: (CloseableCurve15519KeyPair) -> Unit) {
-            if (isClosed) throw IllegalStateException("Cannot use zeroed RatchetState")
-            block(this)
-        }
-
         override fun close() {
             if(isClosed) return
             publicKey.fill(0)

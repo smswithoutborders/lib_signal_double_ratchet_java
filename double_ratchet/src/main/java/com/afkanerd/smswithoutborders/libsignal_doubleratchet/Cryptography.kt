@@ -21,7 +21,7 @@ object Cryptography {
         val rk: ByteArray,
         val hk: ByteArray,
         val nhk: ByteArray,
-    ): Closeable {
+    ): AutoCloseable {
         private var zeroed = false
 
         override fun close() {
@@ -30,14 +30,6 @@ object Cryptography {
                 hk.fill(0)
                 nhk.fill(0)
                 zeroed = true
-            }
-        }
-
-        inline fun <T> use(block: (NoiseNKKeys) -> T): T {
-            try {
-                return block(this)
-            } finally {
-                close()
             }
         }
 
@@ -117,7 +109,7 @@ object Cryptography {
         val nhk: ByteArray,
         val ck: ByteArray? = null,
         val h: ByteArray? = null,
-    ): Closeable {
+    ): AutoCloseable {
         private var zeroed = false
 
         override fun close() {
@@ -128,14 +120,6 @@ object Cryptography {
                 ck?.fill(0)
                 h?.fill(0)
                 zeroed = true
-            }
-        }
-
-        inline fun <T> use(block: (NoiseIKKeys) -> T): T {
-            try {
-                return block(this)
-            } finally {
-                close()
             }
         }
 

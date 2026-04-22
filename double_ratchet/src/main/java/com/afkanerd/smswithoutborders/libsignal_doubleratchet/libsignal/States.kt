@@ -68,11 +68,6 @@ data class States(
         isClosed = true
     }
 
-    fun use(block: (States) -> Unit) {
-        if (isClosed) throw IllegalStateException("Cannot use zeroed RatchetState")
-        block(this)
-    }
-
     companion object {
         @OptIn(ExperimentalSerializationApi::class)
         fun deserialize(data: ByteArray): States {
