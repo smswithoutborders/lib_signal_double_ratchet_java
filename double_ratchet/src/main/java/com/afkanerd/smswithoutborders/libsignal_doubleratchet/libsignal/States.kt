@@ -18,6 +18,13 @@ import java.security.PrivateKey
 import java.security.PublicKey
 
 
+@Serializable
+data class MKSkippedPair(
+    val key: ByteArray?,
+    val count: Int
+)
+
+@Serializable
 data class States(
     var RK: ByteArray? = null,
     var CKs: ByteArray? = null,
@@ -31,7 +38,7 @@ data class States(
     var HKr: ByteArray? = null,
     var NHKs: ByteArray? = null,
     var NHKr: ByteArray? = null,
-    var MKSKIPPED: MutableMap<Pair<ByteArray, Int>, ByteArray> = mutableMapOf()
+    var MKSKIPPED: MutableMap<MKSkippedPair, ByteArray> = mutableMapOf()
 ) : AutoCloseable {
     @OptIn(ExperimentalSerializationApi::class)
     fun serialize(): ByteArray {
@@ -56,7 +63,7 @@ data class States(
         val iterator = MKSKIPPED.entries.iterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
-            entry.key.first.fill(0)
+            entry.key.key?.fill(0)
             entry.value.fill(0)
             iterator.remove()
         }

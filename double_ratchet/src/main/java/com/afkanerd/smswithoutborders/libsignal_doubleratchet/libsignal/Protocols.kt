@@ -8,6 +8,7 @@ import com.afkanerd.smswithoutborders.libsignal_doubleratchet.CryptoUtils.hmac
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.Cryptography
 import com.afkanerd.smswithoutborders.libsignal_doubleratchet.R
 import com.google.common.primitives.Bytes
+import kotlinx.serialization.Serializable
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.CipherParameters
 import org.bouncycastle.crypto.agreement.X25519Agreement
@@ -43,6 +44,7 @@ open class Protocols(private val context: Context) {
         Security.addProvider(BouncyCastleProvider())
     }
 
+    @Serializable
     data class CloseableCurve15519KeyPair(
         var publicKey: ByteArray,
         var privateKey: ByteArray?

@@ -138,7 +138,7 @@ class RatchetsHE(context: Context) : Protocols(context){
                 try {
                     state.CKr = ck
                     val mk = mk
-                    state.MKSKIPPED[Pair(state.HKr, state.Nr.toInt())] = mk
+                    state.MKSKIPPED[MKSkippedPair(state.HKr, state.Nr.toInt())] = mk
                     state.Nr++
                 } finally {
                     ck.fill(0)
@@ -155,7 +155,8 @@ class RatchetsHE(context: Context) : Protocols(context){
         ad: ByteArray
     ) : ByteArray? {
         state.MKSKIPPED.forEach {
-            val (hk, n) = it.key
+            val hk = it.key.key
+            val n = it.key.count
             val mk = it.value
 
             try {
@@ -167,7 +168,7 @@ class RatchetsHE(context: Context) : Protocols(context){
                     return decrypt(mk, ciphertext, concat(ad, encHeader))
                 }
             } finally {
-                hk.fill(0)
+                hk?.fill(0)
                 mk.fill(0)
             }
         }
