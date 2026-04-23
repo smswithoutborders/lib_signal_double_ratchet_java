@@ -47,15 +47,20 @@ object Cryptography {
     ): NoiseNKKeys {
         val protocols = Protocols(context)
 
-        val dh1 = protocols.dh(ephemeralKeyPair, authenticationPublicKey)
-        val dh2 = protocols.dh(ephemeralKeyPair, ephemeralPublicKey)
+        var dh1: ByteArray? = null
+        var dh2: ByteArray? = null
+
+        ephemeralKeyPair.use { ekp ->
+            dh1 = protocols.dh(ekp.privateKey!!, authenticationPublicKey)
+            dh2 = protocols.dh(ekp.privateKey!!, ephemeralPublicKey)
+        }
 
         var hkdf1: ByteArray? = null
         var hkdf2: ByteArray? = null
 
         try {
-            hkdf1 = hkdf(ikm = dh1, salt = salt, info = info, len = 32)
-            hkdf2 = hkdf(ikm = dh2, salt = hkdf1, info = info, len = 96)
+            hkdf1 = hkdf(ikm = dh1!!, salt = salt, info = info, len = 32)
+            hkdf2 = hkdf(ikm = dh2!!, salt = hkdf1, info = info, len = 96)
 
             return NoiseNKKeys(
                 hkdf2.sliceArray(0 until 32),
@@ -63,14 +68,18 @@ object Cryptography {
                 hkdf2.sliceArray(64 until 96),
             )
         } finally {
-            dh1.fill(0)
-            dh2.fill(0)
+            dh1?.fill(0)
+            dh2?.fill(0)
             hkdf1?.fill(0)
             hkdf2?.fill(0)
             // The sliceArray copies inside Triple are intentionally not zeroed —
             // they are the return value and owned by the caller
         }
     }
+
+    /**
+     * This exists only for test purposes, do not use for Production builds
+     */
     fun generateKeysNKServer(
         context: Context,
         authenticationKeypair: Protocols.CloseableCurve15519KeyPair,
@@ -80,8 +89,8 @@ object Cryptography {
         info: ByteArray,
     ): Triple<ByteArray, ByteArray, ByteArray> {
         val protocols = Protocols(context)
-        val dh1 = protocols.dh(authenticationKeypair, ephemeralPublicKey)
-        val dh2 = protocols.dh(ephemeralKeyPair, ephemeralPublicKey)
+        val dh1 = protocols.dh(authenticationKeypair.privateKey!!, ephemeralPublicKey)
+        val dh2 = protocols.dh(ephemeralKeyPair.privateKey!!, ephemeralPublicKey)
 
         var hkdf1: ByteArray? = null
         var hkdf2: ByteArray? = null
@@ -140,11 +149,18 @@ object Cryptography {
         var h = "Noise_IK_25519_AESGCM_SHA256".encodeToByteArray().sha256()
         var ck = h
 
-        h = (h + (authenticationPublicKey as X25519PublicKeyParameters).encoded).sha256()
+        h = (h + authenticationPublicKey).sha256()
         h = (h + ephemeralKeyPair.publicKey).sha256()
 
-        val dhEs = protocols.dh(ephemeralKeyPair, authenticationPublicKey)
-        val dhSs = protocols.dh(staticKeyPair, authenticationPublicKey)
+        var dhEs: ByteArray? = null
+        var dhSs: ByteArray? = null
+
+        ephemeralKeyPair.use { ekp ->
+            staticKeyPair.use { skp ->
+                dhEs = protocols.dh(ekp.privateKey!!, authenticationPublicKey)
+                dhSs = protocols.dh(skp.privateKey!!, authenticationPublicKey)
+            }
+        }
 
         // Named references so we can zero them
         var hkdf1: ByteArray? = null
@@ -155,7 +171,7 @@ object Cryptography {
         var ciphertext: ByteArray? = null
 
         try {
-            hkdf1 = hkdf(ikm = dhEs, salt = ck, info = info, len = 2)
+            hkdf1 = hkdf(ikm = dhEs!!, salt = ck, info = info, len = 2)
             ck = hkdf1.sliceArray(0 until 32)
             k = hkdf1.sliceArray(32 until 64)
 
@@ -166,7 +182,7 @@ object Cryptography {
             )
             h = (h + csPkEnc).sha256()
 
-            hkdf2 = hkdf(ikm = dhSs, salt = ck, info = info, len = 2)
+            hkdf2 = hkdf(ikm = dhSs!!, salt = ck, info = info, len = 2)
             ck = hkdf2.sliceArray(0 until 32)
             k.fill(0) // zero previous k before reassigning
             k = hkdf2.sliceArray(32 until 64)
@@ -189,8 +205,8 @@ object Cryptography {
             )
         } finally {
             // Zero everything sensitive regardless of success or exception
-            dhEs.fill(0)
-            dhSs.fill(0)
+            dhEs?.fill(0)
+            dhSs?.fill(0)
             ck.fill(0)
             k?.fill(0)
             hkdf1?.fill(0)
@@ -219,8 +235,12 @@ object Cryptography {
         var localH = h + ephemeralResponderPublicKey.sha256()
         var localCk = ck.copyOf() // defensive copy — we'll mutate and zero this
 
-        val dhEe = protocols.dh(ephemeralKeyPair, ephemeralResponderPublicKey)
-        val dhSe = protocols.dh(ephemeralKeyPair, authenticationPublicKey)
+        var dhEe: ByteArray? = null
+        var dhSe: ByteArray? = null
+        ephemeralKeyPair.use { ekp ->
+            dhEe = protocols.dh(ekp.privateKey!!, ephemeralResponderPublicKey)
+            dhSe = protocols.dh(ekp.privateKey!!, authenticationPublicKey)
+        }
 
         var hkdf1: ByteArray? = null
         var hkdf2: ByteArray? = null
@@ -230,7 +250,7 @@ object Cryptography {
         var ciphertext2: ByteArray? = null
 
         try {
-            hkdf1 = hkdf(ikm = dhEe, salt = localCk, info = info, len = 2)
+            hkdf1 = hkdf(ikm = dhEe!!, salt = localCk, info = info, len = 2)
             localCk.fill(0)
             localCk = hkdf1.sliceArray(0 until 32)
             k = hkdf1.sliceArray(32 until 64)
@@ -242,7 +262,7 @@ object Cryptography {
             )
             localH = (localH + ciphertext1).sha256()
 
-            hkdf2 = hkdf(ikm = dhSe, salt = localCk, info = info, len = 2)
+            hkdf2 = hkdf(ikm = dhSe!!, salt = localCk, info = info, len = 2)
             localCk.fill(0)
             localCk = hkdf2.sliceArray(0 until 32)
             k.fill(0) // zero previous k before reassign
@@ -269,8 +289,8 @@ object Cryptography {
                 h = localH
             )
         } finally {
-            dhEe.fill(0)
-            dhSe.fill(0)
+            dhEe?.fill(0)
+            dhSe?.fill(0)
             localCk.fill(0)
             k?.fill(0)
             hkdf1?.fill(0)

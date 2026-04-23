@@ -75,32 +75,33 @@ open class Protocols(private val context: Context) {
         }
     }
 
-    fun dh(keypair: CloseableCurve15519KeyPair, publicKey: ByteArray): ByteArray {
+    fun dh(privateKey: ByteArray, publicKey: ByteArray): ByteArray {
         val sharedSecret = ByteArray(32)
         val agreement = X25519Agreement()
-        keypair.use { kp ->
-            agreement.init(X25519PrivateKeyParameters(kp.privateKey, 0))
-            agreement.calculateAgreement(
-                X25519PublicKeyParameters(publicKey),
-                sharedSecret,
-                0
-            )
-        }
+        agreement.init(X25519PrivateKeyParameters(privateKey, 0))
+        agreement.calculateAgreement(
+            X25519PublicKeyParameters(publicKey),
+            sharedSecret,
+            0
+        )
+        privateKey.fill(0)
+        publicKey.fill(0)
         return sharedSecret
     }
 
     fun kdfRk(
         rk: ByteArray,
         dhOut: ByteArray
-    ): Triple<ByteArray, ByteArray, ByteArray> {
+    ): Cryptography.NoiseNKKeys {
         val info = context.getString(R.string.dr_rk_info).encodeToByteArray()
-        return hkdf(dhOut, rk, info, 32*3).run {
-            Triple(
-                this.sliceArray(0 until 32),
-                this.sliceArray(32 until 64),
-                this.sliceArray(64 until 96),
-            )
-        }
+        val hkdf = hkdf(dhOut, rk, info, 32*3)
+        val keys = Cryptography.NoiseNKKeys(
+            hkdf.sliceArray(0 until 32),
+            hkdf.sliceArray(32 until 64),
+            hkdf.sliceArray(64 until 96),
+        )
+        hkdf.fill(0)
+        return keys
     }
 
     fun kdfCk(ck: ByteArray?): Pair<ByteArray, ByteArray> {

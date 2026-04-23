@@ -34,12 +34,15 @@ class RatchetsHE(context: Context) : Protocols(context){
         state.DHRs = generateDH()
         state.DHRr = bobDhPublicKey
 
-        kdfRk(
-            rk = sk, dh( state.DHRs!!, state.DHRr!!)
-        ).let {
-            state.RK = it.first
-            state.CKs = it.second
-            state.NHKs = it.third
+        state.DHRs.use { rs ->
+            val keys = kdfRk(
+                rk = sk, dh( rs?.privateKey!!, state.DHRr!!)
+            )
+            keys.use { k->
+                state.RK = k.rk
+                state.CKs = k.hk
+                state.NHKs = k.nhk
+            }
         }
 
         state.CKr = null
@@ -206,38 +209,34 @@ class RatchetsHE(context: Context) : Protocols(context){
         state.HKr = state.NHKr
         state.DHRr = header.dh.publicKey
 
-        val (rk, ck, nhk) = kdfRk(state.RK!!,
-            dh(
-                state.DHRs!!,
-                state.DHRr!!,
+        state.DHRs.use { rs ->
+            val keys = kdfRk(state.RK!!,
+                dh(
+                    rs?.privateKey!!,
+                    state.DHRr!!,
+                )
             )
-        )
-        try {
-            state.RK = rk.copyOf()
-            state.CKr = ck.copyOf()
-            state.NHKr = nhk.copyOf()
-        } finally {
-            rk.fill(0)
-            ck.fill(0)
-            nhk.fill(0)
+            keys.use { k ->
+                state.RK = k.rk
+                state.CKr = k.hk
+                state.NHKr = k.nhk
+            }
         }
 
         state.DHRs = generateDH()
 
-        val (rk1, ck1, nhk1) = kdfRk(state.RK!!,
-            dh(
-                state.DHRs!!,
-                state.DHRr!!,
+        state.DHRs.use { rs ->
+            val keys = kdfRk(state.RK!!,
+                dh(
+                    rs?.privateKey!!,
+                    state.DHRr!!,
+                )
             )
-        )
-        try {
-            state.RK = rk1.copyOf()
-            state.CKs = ck1.copyOf()
-            state.NHKs = nhk1.copyOf()
-        } finally {
-            rk1.fill(0)
-            ck1.fill(0)
-            nhk1.fill(0)
+            keys.use { k->
+                state.RK = k.rk
+                state.CKs = k.hk
+                state.NHKs = k.nhk
+            }
         }
     }
 }
