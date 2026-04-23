@@ -13,6 +13,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import java.security.SecureRandom
+import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 object Cryptography {
@@ -362,7 +363,49 @@ object Cryptography {
             cipher.init(Cipher.DECRYPT_MODE, key, spec)
             associatedData?.let { cipher.updateAAD(it) }
 
-            return cipher.doFinal(ciphertext)
+            return try {
+                cipher.doFinal(ciphertext)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                throw e
+            }
+        }
+    }
+
+    object AesCbc {
+        private const val ALGORITHM = "AES/CBC/PKCS5Padding"
+        private const val IV_SIZE = 16 // AES block size is always 16 bytes
+
+        fun encrypt(key: ByteArray, plaintext: ByteArray, iv: ByteArray? = null): ByteArray {
+            val cipher = Cipher.getInstance(ALGORITHM)
+
+            val finalIv = iv ?: ByteArray(IV_SIZE).apply { SecureRandom().nextBytes(this) }
+            val keySpec = SecretKeySpec(key, "AES")
+            val ivSpec = IvParameterSpec(finalIv)
+
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec)
+            val ciphertext = cipher.doFinal(plaintext)
+
+            return if(iv == null) {
+                finalIv + ciphertext
+            } else {
+                ciphertext
+            }
+        }
+
+        fun decrypt(
+            key: ByteArray,
+            ciphertext: ByteArray,
+            iv: ByteArray
+        ): ByteArray {
+            val cipher = Cipher.getInstance(ALGORITHM)
+            val keySpec = SecretKeySpec(key, "AES")
+
+            val ivSpec = IvParameterSpec(iv)
+            cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec)
+
+            val plaintext = cipher.doFinal(ciphertext)
+            return plaintext
         }
     }
 }

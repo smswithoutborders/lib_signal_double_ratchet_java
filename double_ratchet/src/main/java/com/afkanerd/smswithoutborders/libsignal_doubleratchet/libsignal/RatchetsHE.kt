@@ -34,15 +34,13 @@ class RatchetsHE(context: Context) : Protocols(context){
         state.DHRs = generateDH()
         state.DHRr = bobDhPublicKey
 
-        state.DHRs.use { rs ->
-            val keys = kdfRk(
-                rk = sk, dh( rs?.privateKey!!, state.DHRr!!)
-            )
-            keys.use { k->
-                state.RK = k.rk
-                state.CKs = k.hk
-                state.NHKs = k.nhk
-            }
+        val keys = kdfRk(
+            rk = sk, dh( state.DHRs?.privateKey!!, state.DHRr!!)
+        )
+        keys.use { k->
+            state.RK = k.rk
+            state.CKs = k.hk
+            state.NHKs = k.nhk
         }
 
         state.CKr = null
@@ -194,8 +192,12 @@ class RatchetsHE(context: Context) : Protocols(context){
             return Pair(header, false)
         }
 
-        header = hDecrypt(state.NHKr!!, encHeader)?.run {
-            Headers.deserialize(this)
+        val decryptedHeader = hDecrypt(state.NHKr!!, encHeader)
+        try {
+            if(decryptedHeader == null) throw Exception("Header is null")
+            header = Headers.deserialize(decryptedHeader)
+        } finally {
+            decryptedHeader?.fill(0)
         }
 
         return Pair(header, true)
@@ -209,34 +211,30 @@ class RatchetsHE(context: Context) : Protocols(context){
         state.HKr = state.NHKr
         state.DHRr = header.dh.publicKey
 
-        state.DHRs.use { rs ->
-            val keys = kdfRk(state.RK!!,
-                dh(
-                    rs?.privateKey!!,
-                    state.DHRr!!,
-                )
+        var keys = kdfRk(state.RK!!,
+            dh(
+                state.DHRs?.privateKey!!,
+                state.DHRr!!,
             )
-            keys.use { k ->
-                state.RK = k.rk
-                state.CKr = k.hk
-                state.NHKr = k.nhk
-            }
+        )
+        keys.use { k ->
+            state.RK = k.rk
+            state.CKr = k.hk
+            state.NHKr = k.nhk
         }
 
         state.DHRs = generateDH()
 
-        state.DHRs.use { rs ->
-            val keys = kdfRk(state.RK!!,
-                dh(
-                    rs?.privateKey!!,
-                    state.DHRr!!,
-                )
+        keys = kdfRk(state.RK!!,
+            dh(
+                state.DHRs?.privateKey!!,
+                state.DHRr!!,
             )
-            keys.use { k->
-                state.RK = k.rk
-                state.CKs = k.hk
-                state.NHKs = k.nhk
-            }
+        )
+        keys.use { k->
+            state.RK = k.rk
+            state.CKs = k.hk
+            state.NHKs = k.nhk
         }
     }
 }

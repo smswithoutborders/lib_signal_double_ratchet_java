@@ -80,12 +80,10 @@ open class Protocols(private val context: Context) {
         val agreement = X25519Agreement()
         agreement.init(X25519PrivateKeyParameters(privateKey, 0))
         agreement.calculateAgreement(
-            X25519PublicKeyParameters(publicKey),
+            X25519PublicKeyParameters(publicKey, 0),
             sharedSecret,
             0
         )
-        privateKey.fill(0)
-        publicKey.fill(0)
         return sharedSecret
     }
 
@@ -118,25 +116,33 @@ open class Protocols(private val context: Context) {
         plainText: ByteArray,
         ad: ByteArray,
     ): ByteArray {
-        val len = 80
-        return hkdf(
+        val len = 76
+        val hkdfOutput = hkdf(
             ikm = mk,
             salt = ByteArray(len),
             info = context.getString(R.string.dr_encrypt_info).encodeToByteArray(),
             len = len,
-        ).run {
-            val key = this.sliceArray(0 until 32)
-            val authKey = this.sliceArray(32 until 64)
-            val iv = this.sliceArray(64 until 80)
+        )
+        try {
+            val key = hkdfOutput.sliceArray(0 until 32)
+            val authKey = hkdfOutput.sliceArray(32 until 64)
+            val iv = hkdfOutput.sliceArray(64 until 76)
 
-            val cipherText = Cryptography.AesGcm.encrypt(
-                key = SecretKeySpec(key, "AES"),
-                iv = iv,
-                plaintext = plainText,
-            )
-            val mac = hmac(authKey)
-            mac.update(ad + cipherText)
-            cipherText + mac.doFinal()
+            try {
+                val cipherText = Cryptography.AesGcm.encrypt(
+                    key = SecretKeySpec(key, "AES"),
+                    iv = iv,
+                    plaintext = plainText,
+                )
+                val mac = hmac(authKey)
+                mac.update(ad + cipherText)
+                return cipherText + mac.doFinal()
+            } finally {
+                key.fill(0)
+                iv.fill(0)
+            }
+        } finally {
+            hkdfOutput.fill(0)
         }
     }
 
@@ -144,38 +150,48 @@ open class Protocols(private val context: Context) {
         mk: ByteArray,
         plainText: ByteArray,
     ): ByteArray {
-        val len = 80
-        return hkdf(
+        val len = 76
+        val hkdfOutputs = hkdf(
             ikm = mk,
             salt = ByteArray(len),
             info = context.getString(R.string.dr_encrypt_info).encodeToByteArray(),
             len = len,
-        ).run {
-            val key = this.sliceArray(0 until 32)
-            val authKey = this.sliceArray(32 until 64)
-            val iv = this.sliceArray(64 until 80)
+        )
 
-            val cipherText = Cryptography.AesGcm.encrypt(
-                key = SecretKeySpec(key, "AES"),
-                iv = iv,
-                plaintext = plainText,
-            )
+        try {
+            val key = hkdfOutputs.sliceArray(0 until 32)
+            val authKey = hkdfOutputs.sliceArray(32 until 64)
+            val iv = hkdfOutputs.sliceArray(64 until 76)
 
-            val mac = hmac(authKey)
-            mac.update(cipherText)
-            cipherText + mac.doFinal()
+            try {
+                val cipherText = Cryptography.AesGcm.encrypt(
+                    key = SecretKeySpec(key, "AES"),
+                    iv = iv,
+                    plaintext = plainText,
+                )
+                val mac = hmac(authKey)
+                mac.update(cipherText)
+                return cipherText + mac.doFinal()
+            } finally {
+                key.fill(0)
+                iv.fill(0)
+            }
+        } finally {
+            hkdfOutputs.fill(0)
         }
     }
 
     fun decrypt(mk: ByteArray, cipherText: ByteArray, ad: ByteArray): ByteArray {
-        val len = 80
-        return hkdf(
+        val len = 76
+        val hkdfOutput = hkdf(
             ikm = mk,
             salt = ByteArray(len),
             info = context.getString(R.string.dr_encrypt_info).encodeToByteArray(),
             len = len,
-        ).run {
-            val authKey = this.sliceArray(32 until 64)
+        )
+
+        try {
+            val authKey = hkdfOutput.sliceArray(32 until 64)
             val plaintextCiphertext = cipherText.dropLast(MAC_LEN).toByteArray()
 
             val mac = hmac(authKey)
@@ -186,27 +202,36 @@ open class Protocols(private val context: Context) {
                 throw Exception("Message failed authentication")
             }
 
-            val key = this.sliceArray(0 until 32)
-            val iv = this.sliceArray(64 until 80)
-            Cryptography.AesGcm.decrypt(
-                key = SecretKeySpec(key, "AES"),
-                ciphertext = plaintextCiphertext,
-                iv = iv,
-            )
+            val key = hkdfOutput.sliceArray(0 until 32)
+            val iv = hkdfOutput.sliceArray(64 until 76)
+            try {
+                return Cryptography.AesGcm.decrypt(
+                    key = SecretKeySpec(key, "AES"),
+                    ciphertext = plaintextCiphertext,
+                    iv = iv,
+                )
+            } finally {
+                key.fill(0)
+                iv.fill(0)
+            }
+        } finally {
+            hkdfOutput.fill(0)
         }
     }
 
     fun hDecrypt(mk: ByteArray?, cipherText: ByteArray): ByteArray? {
-        val len = 80
+        val len = 76
         if(mk == null) return null
 
-        return hkdf(
+        val hkdfOutputs = hkdf(
             ikm = mk,
             salt = ByteArray(len),
             info = context.getString(R.string.dr_encrypt_info).encodeToByteArray(),
             len = len,
-        ).run {
-            val authKey = this.sliceArray(32 until 64)
+        )
+
+        try {
+            val authKey = hkdfOutputs.sliceArray(32 until 64)
             val mac = hmac(authKey)
 
             val plainCiphertext = cipherText.dropLast(MAC_LEN).toByteArray()
@@ -217,13 +242,24 @@ open class Protocols(private val context: Context) {
                 throw Exception("Message failed authentication")
             }
 
-            val key = this.sliceArray(0 until 32)
-            val iv = this.sliceArray(64 until 80)
-            Cryptography.AesGcm.decrypt(
-                key = SecretKeySpec(key, "AES"),
-                ciphertext = plainCiphertext,
-                iv = iv,
-            )
+            val key = hkdfOutputs.sliceArray(0 until 32)
+            val iv = hkdfOutputs.sliceArray(64 until 76)
+            return try {
+                Cryptography.AesGcm.decrypt(
+                    key = SecretKeySpec(key, "AES"),
+                    ciphertext = plainCiphertext,
+                    iv = iv,
+                )
+            } catch (e: Exception){
+                e.fillInStackTrace()
+                throw e
+            } finally {
+                key.fill(0)
+                iv.fill(0)
+                authKey.fill(0)
+            }
+        } finally {
+            hkdfOutputs.fill(0)
         }
     }
 
